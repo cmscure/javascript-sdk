@@ -9,16 +9,32 @@
 
 The official CMSCure JavaScript SDK for web applications. Easily integrate dynamic content management, localization, and real-time updates into your web projects.
 
+**🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
+
 ## 🚀 Features
 
-- **🌍 Multi-language Support**: Seamless localization with real-time language switching
-- **🎨 Dynamic Theming**: Manage colors and themes from your CMSCure dashboard  
-- **📱 Responsive Images**: Centralized image management with CDN delivery
-- **📊 Data Stores**: Custom data management for dynamic content
-- **⚡ Real-time Updates**: Content changes reflect instantly without app updates
-- **🔒 Secure**: JWT-based authentication with rate limiting
+- **🌍 Multi-language Support**: Seamless localization with real-time language switching managed from your [CMSCure Dashboard](https://app.cmscure.com)
+- **🎨 Dynamic Theming**: Manage colors and themes from your [CMSCure Dashboard](https://app.cmscure.com) with real-time updates
+- **📱 Responsive Images**: Centralized image management with CDN delivery through the CMSCure platform
+- **📊 Data Stores**: Custom data management for dynamic content controlled via [app.cmscure.com](https://app.cmscure.com)
+- **⚡ Real-time Updates**: Content changes made in your dashboard reflect instantly without app updates
+- **🔒 Secure**: JWT-based authentication with your CMSCure project credentials
 - **📦 Framework Agnostic**: Works with vanilla JS, React, Next.js, Vue, Angular, and more
 - **🎯 TypeScript Ready**: Full TypeScript support with comprehensive type definitions
+
+## 🎛️ CMSCure Dashboard
+
+All content management happens in your [CMSCure Dashboard](https://app.cmscure.com):
+
+- **📝 Content Editor**: Create and manage strings, translations, and structured data
+- **🎨 Color Management**: Define dynamic color schemes and themes
+- **📸 Asset Manager**: Upload and organize images with automatic CDN optimization  
+- **🌐 Language Manager**: Configure locales and manage translations
+- **👥 Team Collaboration**: Invite team members and manage permissions
+- **📊 Analytics**: Track API usage and content performance
+- **🔄 Real-time Sync**: See changes instantly across all connected applications
+
+**✨ New to CMSCure?** [Sign up for free](https://app.cmscure.com/register) and get your Project ID and API Key in minutes.
 
 ## 📦 Installation
 
