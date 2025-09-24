@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.2.2
+ * CMSCure JavaScript SDK v1.2.3
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2025 CMSCure
@@ -23,7 +23,7 @@
 	 * CMSCure JavaScript SDK
 	 * Official SDK for integrating CMSCure content management into web applications
 	 * 
-	 * @version 1.2.1
+	 * @version 1.2.3
 	 * @author CMSCure Team
 	 * @license MIT
 	 */
@@ -39,7 +39,7 @@
 		  #availableLanguages = ['en'];
 		  #currentLanguage = 'en';
 		  #isInitialized = false;
-		  #serverUrl = 'https://app.cmscure.com';
+		  #serverUrl = 'https://gateway.cmscure.com';
 
 		  constructor() {
 		    super();
