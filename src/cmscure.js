@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.2.5
+ * @version 1.2.6
  * @author CMSCure Team
  * @license MIT
  */
@@ -309,8 +309,22 @@ class CMSCureSDK extends EventTarget {
 
       if (response.ok) {
         const data = await response.json();
-        this.#cache['__images__'] = data;
-        console.log('[CMSCureSDK] Synced images.');
+        
+        // Transform array format [{key: "name", url: "..."}] into object format {name: "..."}
+        const imagesObj = {};
+        if (Array.isArray(data)) {
+          data.forEach(imageItem => {
+            if (imageItem.key && imageItem.url) {
+              imagesObj[imageItem.key] = imageItem.url;
+            }
+          });
+        } else {
+          // If it's already an object, use as-is
+          Object.assign(imagesObj, data);
+        }
+        
+        this.#cache['__images__'] = imagesObj;
+        console.log('[CMSCureSDK] Synced images:', imagesObj);
       } else {
         console.warn(`[CMSCureSDK] Failed to sync images: ${response.status}`);
       }
