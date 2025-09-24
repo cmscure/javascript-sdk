@@ -53,7 +53,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.0.0/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.2.6/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -65,12 +65,17 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.2.6/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
-    <h1 data-cure-key="homepage:title">[Loading...]</h1>
-    <p data-cure-key="homepage:subtitle">[Loading...]</p>
-    <img data-cure-key="homepage:hero_image_url" src="placeholder.jpg" alt="Hero">
+    <h1 data-cure-key="common:brand_name">[Loading...]</h1>
+    <p data-cure-key="homepage:hero_subtitle">[Loading...]</p>
+    <img data-cure-image="deals_banner" src="placeholder.jpg" alt="Hero">
+    
+    <!-- Dynamic colors -->
+    <div style="background-color: var(--primary-color); padding: 1rem; border-radius: 8px;">
+        <span style="color: white;">Dynamic Background Color</span>
+    </div>
     
     <select id="language-selector">
         <option value="en">English</option>
@@ -82,7 +87,7 @@ yarn add @cmscure/javascript-sdk
         const cure = new CMSCureSDK();
         
         // Configure with your project credentials
-        cure.configure({
+        await cure.configure({
             projectId: 'your-project-id',
             apiKey: 'your-api-key'
         });
@@ -91,13 +96,25 @@ yarn add @cmscure/javascript-sdk
         cure.addEventListener('contentUpdated', updateUI);
 
         function updateUI() {
+            // Update translations
             document.querySelectorAll('[data-cure-key]').forEach(element => {
                 const [tab, key] = element.dataset.cureKey.split(':');
-                
-                if (element.tagName === 'IMG' && key.endsWith('_url')) {
-                    const imageUrl = cure.translation(key, tab);
-                    if (imageUrl) element.src = imageUrl;
-                } else {
+                const value = cure.translation(key, tab);
+                if (value) element.textContent = value;
+            });
+            
+            // Update images
+            document.querySelectorAll('[data-cure-image]').forEach(element => {
+                const imageKey = element.dataset.cureImage;
+                const imageUrl = cure.image(imageKey);
+                if (imageUrl) element.src = imageUrl;
+            });
+            
+            // Update colors
+            const primaryColor = cure.color('primary_color');
+            if (primaryColor) {
+                document.documentElement.style.setProperty('--primary-color', primaryColor);
+            }
                     element.textContent = cure.translation(key, tab);
                 }
             });
@@ -122,24 +139,35 @@ const cure = new CMSCureSDK();
 
 function App() {
   const [content, setContent] = useState({});
+  const [colors, setColors] = useState({});
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
-    // Configure SDK
-    cure.configure({
-      projectId: 'your-project-id',
-      apiKey: 'your-api-key'
-    });
+    const initSDK = async () => {
+      // Configure SDK
+      await cure.configure({
+        projectId: 'your-project-id',
+        apiKey: 'your-api-key'
+      });
+    };
 
     // Listen for content updates
     const handleContentUpdate = () => {
       setContent({
-        title: cure.translation('title', 'homepage'),
-        subtitle: cure.translation('subtitle', 'homepage'),
-        heroImage: cure.translation('hero_image_url', 'homepage')
+        brandName: cure.translation('brand_name', 'common'),
+        subtitle: cure.translation('hero_subtitle', 'homepage'),
+        footerText: cure.translation('footer_text', 'common'),
+        dealsImage: cure.image('deals_banner')
+      });
+      
+      setColors({
+        primary: cure.color('primary_color'),
+        accent: cure.color('primary_accent'),
+        button: cure.color('secondary_button')
       });
     };
 
+    initSDK();
     cure.addEventListener('contentUpdated', handleContentUpdate);
     return () => cure.removeEventListener('contentUpdated', handleContentUpdate);
   }, []);
@@ -151,15 +179,20 @@ function App() {
 
   return (
     <div>
-      <h1>{content.title}</h1>
+      <h1 style={{ color: colors.primary }}>{content.brandName}</h1>
       <p>{content.subtitle}</p>
-      <img src={content.heroImage} alt="Hero" />
+      <img src={content.dealsImage} alt="Deals Banner" />
+      <button style={{ backgroundColor: colors.button }}>
+        Click Me
+      </button>
       
       <select value={language} onChange={(e) => handleLanguageChange(e.target.value)}>
         <option value="en">English</option>
         <option value="fr">Français</option>
         <option value="es">Español</option>
       </select>
+      
+      <footer>{content.footerText}</footer>
     </div>
   );
 }
@@ -209,9 +242,10 @@ export default {
   methods: {
     updateContent() {
       this.content = {
-        title: cure.translation('title', 'homepage'),
-        subtitle: cure.translation('subtitle', 'homepage'),
-        heroImage: cure.translation('hero_image_url', 'homepage')
+        title: cure.translation('brand_name', 'common'),
+        subtitle: cure.translation('hero_subtitle', 'homepage'),
+        heroImage: cure.image('deals_banner'),
+        primaryColor: cure.color('primary_color')
       };
     },
     handleLanguageChange() {
@@ -232,54 +266,47 @@ const cure = new CMSCureSDK();
 await cure.configure({
   projectId: 'your-project-id',              // Required: Your CMSCure project ID
   apiKey: 'your-api-key',                    // Required: Your project API key
-  defaultLanguage: 'en',                     // Optional: Default language (default: 'en')
-  enableAutoRealTimeUpdates: true            // Optional: Enable auto real-time updates (default: true)
+  defaultLanguage: 'en'                      // Optional: Default language (default: 'en')
 });
 ```
 
-> **🚀 NEW:** `enableAutoRealTimeUpdates` is **enabled by default** for revolutionary UX! All core methods now automatically subscribe to real-time updates with zero additional configuration.
-
 ### Methods
 
-#### 🚀 `translation(key: string, tab: string): string` **Enhanced!**
-Get a translation for a specific key and tab with **automatic real-time updates**.
+#### `translation(key: string, tab: string): string`
+Get a translation for a specific key and tab.
 
 ```javascript
-// 🚀 Same code, now with automatic real-time updates!
-const title = cure.translation('welcome_message', 'homepage');
-// Automatically subscribes to real-time updates for 'homepage' tab
-// Updates in CMSCure dashboard appear instantly without any additional code!
+const brandName = cure.translation('brand_name', 'common');
+const welcomeMsg = cure.translation('welcome_message', 'homepage');
+// Returns the translated text for the current language, or [key] if not found
 ```
 
-#### 🚀 `image(key: string): string | null` **Enhanced!**
-Get an image URL for a specific key with **automatic real-time updates**.
+#### `image(key: string): string | null`
+Get an image URL for a specific key.
 
 ```javascript
-// 🚀 Same code, now with automatic real-time updates!
+const dealsImage = cure.image('deals_banner');
 const logoUrl = cure.image('company_logo');
-// Automatically subscribes to real-time updates for global images
-// Logo changes in dashboard reflect instantly in your app!
+// Returns the full image URL from your CMSCure project
 ```
 
-#### 🚀 `color(key: string): string | null` **Enhanced!**
-Get a color value for a specific key with **automatic real-time updates**.
+#### `color(key: string): string | null`
+Get a color value for a specific key.
 
 ```javascript
-// 🚀 Same code, now with automatic real-time updates!
-const primaryColor = cure.color('primary_brand_color');
+const primaryColor = cure.color('primary_color');
+const accentColor = cure.color('primary_accent');
 document.body.style.setProperty('--primary-color', primaryColor);
-// Automatically subscribes to real-time updates for colors
-// Color changes in dashboard update your theme instantly!
+// Returns hex color values like '#00ccc9'
 ```
 
-#### 🚀 `dataStore(apiIdentifier: string): DataStoreItem[]` **Enhanced!**
-Get data store items by API identifier with **automatic real-time updates**.
+#### `dataStore(apiIdentifier: string): DataStoreItem[]`
+Get data store items by API identifier.
 
 ```javascript
-// 🚀 Same code, now with automatic real-time updates!
 const products = cure.dataStore('products');
-// Automatically subscribes to real-time updates for this data store
-// Product updates in dashboard sync instantly to your app!
+const blogPosts = cure.dataStore('blog_posts');
+// Returns array of structured data items from your CMSCure project
 ```
 
 #### `setLanguage(language: string): void`
