@@ -1,6 +1,6 @@
 {
   "name": "@cmscure/javascript-sdk",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "description": "Official CMSCure JavaScript SDK for web applications, React, Next.js and other JavaScript frameworks",
   "type": "module",
   "main": "dist/cmscure.js",
