@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.0.4
+ * CMSCure JavaScript SDK v1.1.1
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2025 CMSCure
@@ -4056,7 +4056,7 @@ class CMSCureSDK extends EventTarget {
   #availableLanguages = ['en'];
   #currentLanguage = 'en';
   #isInitialized = false;
-  #serverUrl = 'https://app.cmscure.com';
+  #serverUrl = 'https://gateway.cmscure.com';
 
   // Enhanced Auto Real-time Update Properties
   #socket = null;
