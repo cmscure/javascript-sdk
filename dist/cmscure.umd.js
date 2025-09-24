@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.2.3
+ * CMSCure JavaScript SDK v1.2.4
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2025 CMSCure
@@ -23,7 +23,7 @@
 	 * CMSCure JavaScript SDK
 	 * Official SDK for integrating CMSCure content management into web applications
 	 * 
-	 * @version 1.2.3
+	 * @version 1.2.4
 	 * @author CMSCure Team
 	 * @license MIT
 	 */
@@ -297,10 +297,18 @@
 		        const data = await response.json();
 		        if (!this.#cache[tab]) this.#cache[tab] = {};
 		        
-		        // Store translations by language
-		        Object.keys(data).forEach(lang => {
-		          this.#cache[tab][lang] = data[lang];
-		        });
+		        // Process the keys array from API response
+		        if (data.keys && Array.isArray(data.keys)) {
+		          data.keys.forEach(keyObj => {
+		            const { key, values } = keyObj;
+		            // Restructure: values = {en: "value", fr: "valeur"} 
+		            // Into: cache[tab][lang][key] = value
+		            Object.keys(values).forEach(lang => {
+		              if (!this.#cache[tab][lang]) this.#cache[tab][lang] = {};
+		              this.#cache[tab][lang][key] = values[lang];
+		            });
+		          });
+		        }
 		        
 		        console.log(`[CMSCureSDK] Synced tab: ${tab}`);
 		      } else {
