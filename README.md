@@ -7,32 +7,20 @@
 [![CDN](https://img.shields.io/badge/CDN-jsDelivr-orange)](https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk/)
 [![CDN](https://img.shields.io/badge/CDN-UNPKG-blue)](https://unpkg.com/@cmscure/javascript-sdk/)
 
-The official CMSCure JavaScript SDK for web applications. **Enhanced with Revolutionary Automatic Real-time Updates!** Easily integrate dynamic content management, localization, and real-time updates into your web projects.
-
-> **🚀 NEW v1.1.0:** All core methods now automatically enable real-time updates while maintaining 100% backward compatibility - no code changes required!
-> - `translation()` - Auto real-time translations
-> - `color()` - Auto real-time colors  
-> - `image()` - Auto real-time images
-> - `dataStore()` - Auto real-time data stores
+The official CMSCure JavaScript SDK for web applications. Easily integrate dynamic content management, localization, and multi-language support into your web projects.
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🚀 Enhanced Features
+## ✨ Key Features
 
-- **🚀 Revolutionary Auto Real-time Updates**: All core methods now automatically enable real-time updates with zero configuration - just call the methods and your content stays live!
-  - `translation()` - Enhanced translations with auto real-time updates
-  - `color()` - Enhanced colors with auto real-time updates  
-  - `image()` - Enhanced images with auto real-time updates
-  - `dataStore()` - Enhanced data stores with auto real-time updates
-- **🌍 Multi-language Support**: Seamless localization with real-time language switching managed from your [CMSCure Dashboard](https://app.cmscure.com)
-- **🎨 Dynamic Theming**: Manage colors and themes from your [CMSCure Dashboard](https://app.cmscure.com) with real-time updates
+- **🌍 Multi-language Support**: Seamless localization and language switching managed from your [CMSCure Dashboard](https://app.cmscure.com)
+- **🎨 Dynamic Theming**: Manage colors and themes from your [CMSCure Dashboard](https://app.cmscure.com)
 - **📱 Responsive Images**: Centralized image management with CDN delivery through the CMSCure platform
 - **📊 Data Stores**: Custom data management for dynamic content controlled via [app.cmscure.com](https://app.cmscure.com)
-- **⚡ Zero-Setup Real-time**: Content changes made in your dashboard reflect instantly without manual subscriptions
 - **🔒 Secure**: JWT-based authentication with your CMSCure project credentials
 - **📦 Framework Agnostic**: Works with vanilla JS, React, Next.js, Vue, Angular, and more
 - **🎯 TypeScript Ready**: Full TypeScript support with comprehensive type definitions
-- **🔄 100% Backward Compatible**: Existing code works unchanged while gaining automatic real-time capabilities
+- **⚡ Fast & Lightweight**: Optimized for performance with intelligent caching
 
 ## 🎛️ CMSCure Dashboard
 
@@ -44,7 +32,7 @@ All content management happens in your [CMSCure Dashboard](https://app.cmscure.c
 - **🌐 Language Manager**: Configure locales and manage translations
 - **👥 Team Collaboration**: Invite team members and manage permissions
 - **📊 Analytics**: Track API usage and content performance
-- **🔄 Real-time Sync**: See changes instantly across all connected applications
+- **🔄 Content Sync**: Manage content updates from your dashboard
 
 **✨ New to CMSCure?** [Sign up for free](https://app.cmscure.com/register) and get your Project ID and API Key in minutes.
 
