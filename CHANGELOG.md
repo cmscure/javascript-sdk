@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.4] - 2025-09-24
+## [1.1.1] - 2025-09-24
 
 ### Fixed
 - **CRITICAL**: Reverted unstable v1.1.0 real-time features that caused issues
-- Restored to stable, proven functionality
+- Restored to stable, proven functionality  
 - Removed Socket.IO dependencies and real-time complications
 - Updated documentation to remove experimental feature references
 - Ensures reliable performance for production applications
 
 ### Note
-- v1.1.0 contained experimental real-time features that were not production-ready
-- v1.0.4 restores the stable, tested functionality from v1.0.3
+- v1.1.0 (now deprecated) contained experimental real-time features that were not production-ready
+- v1.1.1 restores the stable, tested functionality and becomes the new @latest
 - All core features (translations, colors, images, data stores) work reliably
 
 ## [1.0.3] - 2025-09-24
