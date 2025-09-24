@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMSCure SDK - Vanilla HTML Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .hero img {
+            max-width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .language-selector {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .language-selector select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .product {
+            border: 1px solid #eee;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1 data-cure-key="common:brand_name">[Loading Brand Name...]</h1>
+            <p data-cure-key="homepage:hero_subtitle">[Loading Subtitle...]</p>
+            <img data-cure-key="homepage:hero_image_url" src="https://placehold.co/600x300/EEE/666?text=Loading..." alt="Hero Image">
+        </div>
+
+        <div class="language-selector">
+            <label for="lang-select">Language:</label>
+            <select id="lang-select">
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <div class="products">
+            <div class="product">
+                <h2 data-cure-key="products:product1_name">[Loading Product 1...]</h2>
+                <p data-cure-key="products:product1_desc">[Loading Description...]</p>
+            </div>
+
+            <div class="product">
+                <h2 data-cure-key="products:product2_name">[Loading Product 2...]</h2>
+                <p data-cure-key="products:product2_desc">[Loading Description...]</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p data-cure-key="common:footer_text">[Loading Footer...]</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize CMSCure SDK
+        const cure = new CMSCureSDK();
+        const langSelector = document.getElementById('lang-select');
+
+        // Configure with your credentials
+        cure.configure({
+            projectId: '19e40de54c99db47', // Replace with your project ID
+            apiKey: '73c05a3f162270e378285d8c2c37a95a4c93b9f9e92eb9c5b1dab5df1ffc4d04' // Replace with your API key
+        });
+
+        // Update UI when content changes
+        cure.addEventListener('contentUpdated', updateUI);
+        cure.addEventListener('languageChanged', updateLanguageSelector);
+
+        function updateUI() {
+            console.log('UI UPDATE TRIGGERED. Current language:', cure.getLanguage());
+
+            document.querySelectorAll('[data-cure-key]').forEach(element => {
+                const keyParts = element.dataset.cureKey.split(':');
+                if (keyParts.length !== 2) return;
+                
+                const [tab, key] = keyParts;
+                let value;
+
+                // Handle image elements differently from text elements
+                if (element.tagName === 'IMG') {
+                    // For images, check if it's a translation key ending with _url
+                    if (key.endsWith('_url')) {
+                        // This is a translation that contains an image URL
+                        value = cure.translation(key, tab);
+                        if (value) {
+                            element.src = value;
+                        }
+                    } else {
+                        // This is a direct image key
+                        value = cure.image(key);
+                        if (value) {
+                            element.src = value;
+                        }
+                    }
+                } else {
+                    value = cure.translation(key, tab);
+                    element.textContent = value;
+                }
+            });
+
+            // Update CSS custom properties with colors
+            updateColors();
+        }
+
+        function updateColors() {
+            const primaryColor = cure.color('primary_color');
+            const secondaryColor = cure.color('secondary_color');
+            
+            if (primaryColor) {
+                document.documentElement.style.setProperty('--primary-color', primaryColor);
+            }
+            if (secondaryColor) {
+                document.documentElement.style.setProperty('--secondary-color', secondaryColor);
+            }
+        }
+
+        function updateLanguageSelector() {
+            const languages = cure.getAvailableLanguages();
+            const currentLang = cure.getLanguage();
+            
+            langSelector.innerHTML = '';
+            
+            const languageNames = { 
+                en: 'English', 
+                fr: 'Français', 
+                es: 'Español',
+                de: 'Deutsch',
+                it: 'Italiano',
+                pt: 'Português',
+                ru: 'Русский',
+                zh: '中文',
+                ja: '日本語',
+                ko: '한국어'
+            };
+            
+            languages.forEach(lang => {
+                const option = document.createElement('option');
+                option.value = lang;
+                option.textContent = languageNames[lang] || lang.toUpperCase();
+                if (lang === currentLang) {
+                    option.selected = true;
+                }
+                langSelector.appendChild(option);
+            });
+        }
+
+        // Language selector event
+        langSelector.addEventListener('change', (e) => {
+            cure.setLanguage(e.target.value);
+        });
+
+        // Initial UI update (for cached content)
+        updateUI();
+    </script>
+</body>
+</html>
