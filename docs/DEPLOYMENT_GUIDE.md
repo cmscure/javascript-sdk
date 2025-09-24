@@ -154,7 +154,7 @@ Once published to NPM, your package is automatically available on multiple CDNs:
 
 2. **unpkg**
    - `https://unpkg.com/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js`
-   - `https://unpkg.com/@cmscure/javascript-sdk@1.0.0/dist/cmscure.umd.min.js`
+   - `https://unpkg.com/@cmscure/javascript-sdk@1.0.3/dist/cmscure.umd.min.js`
 
 #### Test CDN Links
 
