@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.2.4
+ * @version 1.2.5
  * @author CMSCure Team
  * @license MIT
  */
@@ -331,8 +331,22 @@ class CMSCureSDK extends EventTarget {
 
       if (response.ok) {
         const data = await response.json();
-        this.#cache['__colors__'] = data;
-        console.log('[CMSCureSDK] Synced colors.');
+        
+        // Transform array format [{key: "name", value: "#hex"}] into object format {name: "#hex"}
+        const colorsObj = {};
+        if (Array.isArray(data)) {
+          data.forEach(colorItem => {
+            if (colorItem.key && colorItem.value) {
+              colorsObj[colorItem.key] = colorItem.value;
+            }
+          });
+        } else {
+          // If it's already an object, use as-is
+          Object.assign(colorsObj, data);
+        }
+        
+        this.#cache['__colors__'] = colorsObj;
+        console.log('[CMSCureSDK] Synced colors:', colorsObj);
       } else {
         console.warn(`[CMSCureSDK] Failed to sync colors: ${response.status}`);
       }
