@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.1.0
+ * CMSCure JavaScript SDK v1.0.4
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2025 CMSCure
