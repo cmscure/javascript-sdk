@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.3.0
+ * @version 1.3.1
  * @author CMSCure Team
  * @license MIT
  */
@@ -99,9 +99,19 @@ export class CMSCureSDK extends EventTarget {
   async configure(config: CMSCureConfig): Promise<void> {
     this.config = { ...config };
     this.desiredDefaultLanguage = config.defaultLanguage;
+    const defaultServerUrl = 'https://gateway.cmscure.com';
+    const defaultSocketUrl = 'wss://app.cmscure.com';
+
     this.projectSecret = config.projectSecret ?? null;
-    this.serverUrl = config.serverUrl ?? 'https://app.cmscure.com';
-    this.socketUrl = config.socketUrl ?? this.deriveSocketUrl(this.serverUrl);
+    this.serverUrl = config.serverUrl ?? defaultServerUrl;
+
+    if (config.socketUrl) {
+      this.socketUrl = config.socketUrl;
+    } else if (config.serverUrl) {
+      this.socketUrl = this.deriveSocketUrl(config.serverUrl);
+    } else {
+      this.socketUrl = defaultSocketUrl;
+    }
     this.autoLanguageResolved = false;
     this.autoSubscribedTabs.clear();
     this.autoSubscribedStores.clear();

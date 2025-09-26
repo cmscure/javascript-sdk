@@ -10,7 +10,7 @@ class CMSCureSDK extends EventTarget {
   #currentLanguage = 'en';
   #cache = {};
   #dataStoreCache = {};
-  #serverUrl = 'https://app.cmscure.com';
+  #serverUrl = 'https://gateway.cmscure.com';
   #socketUrl = 'wss://app.cmscure.com';
   #socket = null;
   #handshakeAcknowledged = false;
@@ -47,11 +47,21 @@ class CMSCureSDK extends EventTarget {
       return;
     }
 
+    const defaultServerUrl = 'https://gateway.cmscure.com';
+    const defaultSocketUrl = 'wss://app.cmscure.com';
+
     this.#config = { ...config };
     this.#desiredDefaultLanguage = config.defaultLanguage;
     this.#projectSecret = config.projectSecret || null;
-    this.#serverUrl = config.serverUrl || 'https://app.cmscure.com';
-    this.#socketUrl = config.socketUrl || this.#deriveSocketUrl(this.#serverUrl);
+    this.#serverUrl = config.serverUrl || defaultServerUrl;
+
+    if (config.socketUrl) {
+      this.#socketUrl = config.socketUrl;
+    } else if (config.serverUrl) {
+      this.#socketUrl = this.#deriveSocketUrl(config.serverUrl);
+    } else {
+      this.#socketUrl = defaultSocketUrl;
+    }
     this.#autoLanguageResolved = false;
     this.#autoSubscribedTabs.clear();
     this.#autoSubscribedStores.clear();
