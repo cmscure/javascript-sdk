@@ -11,16 +11,23 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
+## 🔄 What’s New
+
+- **Automatic language resolution** – the SDK now chooses the best language using stored preference → configured default → browser locale → English fallback.
+- **Persistent caching** – translations, colors, images, and data stores are written to local storage for instant loads and offline resilience.
+- **Real-time sync (optional)** – supply a `projectSecret` to receive live updates through secure Socket.IO channels, matching the iOS SDK experience.
+- **Configurable endpoints** – override `serverUrl` and `socketUrl` for staging or self-hosted environments.
+
 ## ✨ Key Features
 
-- **🌍 Multi-language Support**: Seamless localization and language switching managed from your [CMSCure Dashboard](https://app.cmscure.com)
-- **🎨 Dynamic Theming**: Manage colors and themes from your [CMSCure Dashboard](https://app.cmscure.com)
-- **📱 Responsive Images**: Centralized image management with CDN delivery through the CMSCure platform
-- **📊 Data Stores**: Custom data management for dynamic content controlled via [app.cmscure.com](https://app.cmscure.com)
-- **🔒 Secure**: JWT-based authentication with your CMSCure project credentials
-- **📦 Framework Agnostic**: Works with vanilla JS, React, Next.js, Vue, Angular, and more
-- **🎯 TypeScript Ready**: Full TypeScript support with comprehensive type definitions
-- **⚡ Fast & Lightweight**: Optimized for performance with intelligent caching
+- **🌍 Multi-language Support**: Seamless localization with automatic language resolution and instant switching.
+- **🎨 Dynamic Theming**: Manage colors and themes from your [CMSCure Dashboard](https://app.cmscure.com) with live cache refreshes.
+- **🖼️ Global Images**: Centralized image management with CDN delivery and browser prefetching.
+- **📊 Data Stores**: Structured data collections synced and cached for rapid UI updates.
+- **🔒 Secure**: JWT-based authentication plus optional encrypted socket handshakes for real-time events.
+- **📦 Framework Agnostic**: Works with vanilla JS, React, Next.js, Vue, Angular, and more.
+- **🎯 TypeScript Ready**: Full TypeScript support with comprehensive type definitions.
+- **⚡ Fast & Offline Friendly**: Persistent caching delivers instant loads and resilience during network hiccups.
 
 ## 🎛️ CMSCure Dashboard
 
@@ -85,45 +92,43 @@ yarn add @cmscure/javascript-sdk
 
     <script>
         const cure = new CMSCureSDK();
-        
-        // Configure with your project credentials
-        await cure.configure({
-            projectId: 'your-project-id',
-            apiKey: 'your-api-key'
-        });
 
-        // Update UI when content changes
-        cure.addEventListener('contentUpdated', updateUI);
+        async function init() {
+            await cure.configure({
+                projectId: 'your-project-id',
+                apiKey: 'your-api-key',
+                projectSecret: 'optional-project-secret-for-realtime'
+            });
+
+            updateUI();
+        }
 
         function updateUI() {
-            // Update translations
             document.querySelectorAll('[data-cure-key]').forEach(element => {
                 const [tab, key] = element.dataset.cureKey.split(':');
                 const value = cure.translation(key, tab);
                 if (value) element.textContent = value;
             });
-            
-            // Update images
+
             document.querySelectorAll('[data-cure-image]').forEach(element => {
                 const imageKey = element.dataset.cureImage;
                 const imageUrl = cure.image(imageKey);
                 if (imageUrl) element.src = imageUrl;
             });
-            
-            // Update colors
+
             const primaryColor = cure.color('primary_color');
             if (primaryColor) {
                 document.documentElement.style.setProperty('--primary-color', primaryColor);
             }
-                    element.textContent = cure.translation(key, tab);
-                }
-            });
         }
 
-        // Language selector
-        document.getElementById('language-selector').addEventListener('change', (e) => {
-            cure.setLanguage(e.target.value);
+        cure.addEventListener('contentUpdated', () => updateUI());
+
+        document.getElementById('language-selector').addEventListener('change', (event) => {
+            cure.setLanguage(event.target.value);
         });
+
+        init();
     </script>
 </body>
 </html>
@@ -143,15 +148,6 @@ function App() {
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
-    const initSDK = async () => {
-      // Configure SDK
-      await cure.configure({
-        projectId: 'your-project-id',
-        apiKey: 'your-api-key'
-      });
-    };
-
-    // Listen for content updates
     const handleContentUpdate = () => {
       setContent({
         brandName: cure.translation('brand_name', 'common'),
@@ -165,6 +161,16 @@ function App() {
         accent: cure.color('primary_accent'),
         button: cure.color('secondary_button')
       });
+    };
+
+    const initSDK = async () => {
+      await cure.configure({
+        projectId: 'your-project-id',
+        apiKey: 'your-api-key',
+        projectSecret: process.env.NEXT_PUBLIC_CMSCURE_SECRET
+      });
+
+      handleContentUpdate();
     };
 
     initSDK();
@@ -233,7 +239,8 @@ export default {
   async mounted() {
     await cure.configure({
       projectId: 'your-project-id',
-      apiKey: 'your-api-key'
+      apiKey: 'your-api-key',
+      projectSecret: import.meta.env.VITE_CMSCURE_SECRET
     });
 
     cure.addEventListener('contentUpdated', this.updateContent);
@@ -264,16 +271,19 @@ export default {
 const cure = new CMSCureSDK();
 
 await cure.configure({
-  projectId: 'your-project-id',              // Required: Your CMSCure project ID
-  apiKey: 'your-api-key',                    // Required: Your project API key
-  defaultLanguage: 'en'                      // Optional: Default language (default: 'en')
+  projectId: 'your-project-id',              // Required: CMSCure project ID
+  apiKey: 'your-api-key',                    // Required: project API key
+  defaultLanguage: 'en',                     // Optional: preferred default language
+  projectSecret: 'your-project-secret',      // Optional: enables real-time sockets
+  serverUrl: 'https://app.cmscure.com',      // Optional: override CMS host
+  socketUrl: 'wss://app.cmscure.com'         // Optional: explicit websocket endpoint
 });
 ```
 
 ### Methods
 
 #### `translation(key: string, tab: string): string`
-Get a translation for a specific key and tab.
+Get a translation for a specific key and tab. Automatically caches and subscribes to real-time updates for that tab.
 
 ```javascript
 const brandName = cure.translation('brand_name', 'common');
@@ -282,7 +292,7 @@ const welcomeMsg = cure.translation('welcome_message', 'homepage');
 ```
 
 #### `image(key: string): string | null`
-Get an image URL for a specific key.
+Get a global image URL for a specific key. Image URLs are cached and prefetched for smooth rendering.
 
 ```javascript
 const dealsImage = cure.image('deals_banner');
@@ -291,7 +301,7 @@ const logoUrl = cure.image('company_logo');
 ```
 
 #### `color(key: string): string | null`
-Get a color value for a specific key.
+Get a color value for a specific key. Colors stay cached and refresh silently when changed.
 
 ```javascript
 const primaryColor = cure.color('primary_color');
@@ -301,7 +311,7 @@ document.body.style.setProperty('--primary-color', primaryColor);
 ```
 
 #### `dataStore(apiIdentifier: string): DataStoreItem[]`
-Get data store items by API identifier.
+Get data store items by API identifier. Stores are cached and resynced when updates arrive.
 
 ```javascript
 const products = cure.dataStore('products');
@@ -317,7 +327,7 @@ cure.setLanguage('fr');
 ```
 
 #### `getLanguage(): string`
-Get the current language.
+Get the current language. Reflects automatic resolution or manual overrides.
 
 ```javascript
 const currentLang = cure.getLanguage();
@@ -330,144 +340,44 @@ Get all available languages for the project.
 const languages = cure.getAvailableLanguages();
 ```
 
-## 🚀 Revolutionary Enhancement: Before vs After
+## 🔄 Runtime Behaviour
 
-### ✨ What Changed in v1.1.0
+### Automatic Language Resolution
 
-All core methods now **automatically enable real-time updates** while maintaining **100% backward compatibility**. Your existing code gains real-time capabilities without any changes!
+On first load the SDK restores any previously selected language. If none is stored it prefers `defaultLanguage`, then matches the browser locale (full and base codes), and finally falls back to English. Calling `setLanguage()` persists the choice and triggers targeted resyncs for the new language.
 
-#### 🔴 BEFORE v1.1.0: Manual Real-time Setup
-```javascript
-// OLD WAY - Required manual event listeners and subscriptions
-const cure = new CMSCureSDK();
-await cure.configure({ projectId: 'xxx', apiKey: 'xxx' });
+### Caching Strategy
 
-// Manual subscription setup required
-cure.addEventListener('contentUpdated', updateUI);
-cure.addEventListener('translationUpdated', handleTranslationUpdate);
-cure.addEventListener('colorUpdated', handleColorUpdate);
-// ... more manual event handlers needed
+- Translations, colors, images, and data stores are cached in local storage after every sync.
+- Cached values are returned instantly while background fetches refresh data on cache misses, language changes, and socket events.
+- Image URLs are prefetched into the browser cache to minimize flicker on render.
 
-function updateUI() {
-  // Had to manually refresh all UI elements
-  document.getElementById('title').textContent = cure.translation('title', 'home');
-  document.getElementById('subtitle').textContent = cure.translation('subtitle', 'home');
-  // ... manual updates for every element
-}
+### Real-time Updates
 
-// Complex real-time setup - developers had to understand WebSocket management
-```
-
-#### 🟢 NOW v1.1.0: Zero-Setup Automatic Real-time!
-```javascript
-// NEW WAY - Just use the methods, real-time included automatically! ✨
-const cure = new CMSCureSDK();
-await cure.configure({ projectId: 'xxx', apiKey: 'xxx' }); // Real-time enabled by default!
-
-// That's it! Just call the methods and get automatic real-time updates 🚀
-const title = cure.translation('title', 'home');        // Auto real-time ✨
-const subtitle = cure.translation('subtitle', 'home');   // Auto real-time ✨
-const color = cure.color('primary');                     // Auto real-time ✨
-const logo = cure.image('logo');                         // Auto real-time ✨
-const products = cure.dataStore('products');             // Auto real-time ✨
-
-// No manual subscriptions needed!
-// No complex event handlers!
-// No WebSocket management!
-// Content updates automatically when changed in CMSCure dashboard! 🎉
-```
-
-### 🎯 Key Benefits of the Enhancement
-
-| Aspect | Before v1.1.0 | Now v1.1.0 |
-|--------|---------------|-------------|
-| **Real-time Setup** | Manual event listeners required | ✅ **Automatic** - just call methods |
-| **Code Complexity** | Multiple event handlers needed | ✅ **Zero additional code** |
-| **Learning Curve** | Had to understand WebSocket events | ✅ **No learning required** |
-| **Breaking Changes** | N/A | ✅ **100% backward compatible** |
-| **Developer Experience** | Complex setup, error-prone | ✅ **"It just works" magic** |
-| **Maintenance** | Manual subscription management | ✅ **SDK handles everything** |
-
-### 🔧 Enhanced Utility Methods
-
-Monitor your automatic subscriptions with these new utility methods:
+Provide `projectSecret` during `configure()` to opt into live updates. The SDK performs an AES-GCM handshake and listens for translation, color, image, and data store events. Each event triggers a narrow resync and emits `contentUpdated`; language switches also emit `languageChanged`.
 
 ```javascript
-// Check what's been automatically subscribed to real-time updates
-const subscribedTabs = cure.getAutoSubscribedTabs();        // ['home', 'about']
-const isColorsLive = cure.isColorsAutoSubscribed();         // true
-const isImagesLive = cure.isImagesAutoSubscribed();         // true  
-const subscribedStores = cure.getAutoSubscribedDataStores(); // ['products', 'blog']
+await cure.configure({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+  projectSecret: 'your-project-secret' // Enables sockets
+});
 
-// Clean up when done (e.g., page unload)
-cure.disconnect(); // Cleans up all real-time connections
-```
-
-### Events
-
-#### `contentUpdated` 🚀 **Enhanced!**
-Fired when content is updated (initial load, language change, **or real-time updates**).
-
-```javascript
 cure.addEventListener('contentUpdated', (event) => {
-  console.log('Content updated:', event.detail.reason);
-  // Reasons include: 'InitialSyncComplete', 'LanguageChanged', 
-  // 'TranslationUpdated', 'ColorUpdated', 'ImageUpdated', 'DataStoreUpdated'
+  console.log('Content refreshed because:', event.detail.reason);
+  updateUI();
+});
+
+cure.addEventListener('languageChanged', (event) => {
+  console.log('Language changed from', event.detail.previous, 'to', event.detail.language);
   updateUI();
 });
 ```
 
-#### `languageChanged`
-Fired when the language is changed.
+### Events
 
-```javascript
-cure.addEventListener('languageChanged', (event) => {
-  console.log('Language changed to:', event.detail.language);
-});
-```
-
-#### 🆕 `translationUpdated`
-Fired when a specific translation is updated in real-time.
-
-```javascript
-cure.addEventListener('translationUpdated', (event) => {
-  const { tabName, key, values } = event.detail;
-  console.log(`Translation updated: ${key} in ${tabName}`, values);
-});
-```
-
-#### 🆕 `colorUpdated`
-Fired when a specific color is updated in real-time.
-
-```javascript
-cure.addEventListener('colorUpdated', (event) => {
-  const { key, value } = event.detail;
-  console.log(`Color updated: ${key} = ${value}`);
-  document.documentElement.style.setProperty(`--${key}`, value);
-});
-```
-
-#### 🆕 `imageUpdated`
-Fired when a specific image is updated in real-time.
-
-```javascript
-cure.addEventListener('imageUpdated', (event) => {
-  const { key, url } = event.detail;
-  console.log(`Image updated: ${key} = ${url}`);
-  document.querySelector(`[data-image="${key}"]`).src = url;
-});
-```
-
-#### 🆕 `dataStoreUpdated`
-Fired when a specific data store is updated in real-time.
-
-```javascript
-cure.addEventListener('dataStoreUpdated', (event) => {
-  const { apiIdentifier, items } = event.detail;
-  console.log(`Data store updated: ${apiIdentifier}`, items);
-  renderDataStore(apiIdentifier, items);
-});
-```
+- `contentUpdated` – fires after cache refreshes triggered by initial sync, cache misses, language changes, or real-time updates. Inspect `event.detail.reason` for context (e.g., `InitialSyncComplete`, `LanguageChange`, `RealtimeUpdate`).
+- `languageChanged` – fires when the active language changes, providing the previous and new codes.
 
 ## 🎨 Styling with Dynamic Colors
 
@@ -515,7 +425,11 @@ export function CMSProvider({ children, projectId, apiKey }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    cure.configure({ projectId, apiKey }).then(() => setIsReady(true));
+    cure.configure({
+      projectId,
+      apiKey,
+      projectSecret: process.env.NEXT_PUBLIC_CMSCURE_SECRET
+    }).then(() => setIsReady(true));
   }, [projectId, apiKey]);
 
   if (!isReady) return <div>Loading...</div>;
@@ -541,7 +455,8 @@ export default defineNuxtPlugin(async () => {
   
   await cure.configure({
     projectId: useRuntimeConfig().public.cmscureProjectId,
-    apiKey: useRuntimeConfig().public.cmscureApiKey
+    apiKey: useRuntimeConfig().public.cmscureApiKey,
+    projectSecret: useRuntimeConfig().public.cmscureProjectSecret
   });
 
   return {
