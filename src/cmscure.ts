@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.3.1
+ * @version 1.3.2
  * @author CMSCure Team
  * @license MIT
  */
@@ -107,6 +107,8 @@ export class CMSCureSDK extends EventTarget {
 
     if (config.socketUrl) {
       this.socketUrl = config.socketUrl;
+    } else if (config.serverUrl && this.isGatewayUrl(config.serverUrl)) {
+      this.socketUrl = defaultSocketUrl;
     } else if (config.serverUrl) {
       this.socketUrl = this.deriveSocketUrl(config.serverUrl);
     } else {
@@ -393,6 +395,16 @@ export class CMSCureSDK extends EventTarget {
     } catch (error) {
       console.warn('[CMSCureSDK] Invalid serverUrl provided, falling back to default socket URL.', error);
       return 'wss://app.cmscure.com';
+    }
+  }
+
+  private isGatewayUrl(url: string): boolean {
+    try {
+      const hostname = new URL(url).hostname.toLowerCase();
+      return hostname.includes('gateway') || hostname.includes('sdk-edge');
+    } catch (error) {
+      console.warn('[CMSCureSDK] Unable to inspect serverUrl hostname.', error);
+      return false;
     }
   }
 

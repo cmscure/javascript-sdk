@@ -17,7 +17,7 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 - **Persistent caching** – translations, colors, images, and data stores are written to local storage for instant loads and offline resilience.
 - **Real-time sync (optional)** – supply a `projectSecret` to receive live updates through secure Socket.IO channels, matching the iOS SDK experience.
 - **Configurable endpoints** – override `serverUrl` and `socketUrl` for staging or self-hosted environments.
-- **Built-in edge gateway** – browser builds now default to the CMSCure SDK Edge proxy (`https://gateway.cmscure.com`) to avoid CORS headaches.
+- **Edge gateway default** – REST calls target `https://gateway.cmscure.com` out of the box (swap to your own proxy if needed) while sockets remain on `app.cmscure.com`.
 
 ## ✨ Key Features
 
@@ -281,7 +281,16 @@ await cure.configure({
 });
 ```
 
-> **Note:** You can omit `serverUrl`/`socketUrl` to rely on the defaults above, and override them for staging or self-hosted deployments.
+> **Note:** By default REST requests go through `https://gateway.cmscure.com` and sockets hit `wss://app.cmscure.com`. Override `serverUrl` for custom gateways and either keep `socketUrl` unset (auto-detects) or set it explicitly when needed.
+
+```typescript
+await cure.configure({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+  serverUrl: 'https://gateway.cmscure.com', // Your edge proxy
+  socketUrl: 'wss://app.cmscure.com'        // Keep realtime on the primary host
+});
+```
 
 ### Methods
 

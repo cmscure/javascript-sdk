@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.3.1
+ * CMSCure JavaScript SDK v1.3.2
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2025 CMSCure
@@ -4090,6 +4090,8 @@ class CMSCureSDK extends EventTarget {
 
     if (config.socketUrl) {
       this.#socketUrl = config.socketUrl;
+    } else if (config.serverUrl && this.#isGatewayUrl(config.serverUrl)) {
+      this.#socketUrl = defaultSocketUrl;
     } else if (config.serverUrl) {
       this.#socketUrl = this.#deriveSocketUrl(config.serverUrl);
     } else {
@@ -4210,6 +4212,16 @@ class CMSCureSDK extends EventTarget {
     } catch (error) {
       console.warn('[CMSCureSDK] Invalid serverUrl provided, falling back to default socket URL.', error);
       return 'wss://app.cmscure.com';
+    }
+  }
+
+  #isGatewayUrl(url) {
+    try {
+      const hostname = new URL(url).hostname.toLowerCase();
+      return hostname.includes('gateway') || hostname.includes('sdk-edge');
+    } catch (error) {
+      console.warn('[CMSCureSDK] Unable to inspect serverUrl hostname.', error);
+      return false;
     }
   }
 
