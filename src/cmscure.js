@@ -10,8 +10,8 @@ class CMSCureSDK extends EventTarget {
   #currentLanguage = 'en';
   #cache = {};
   #dataStoreCache = {};
-  #serverUrl = 'https://gateway.cmscure.com';
-  #socketUrl = 'wss://app.cmscure.com';
+  #serverUrl = 'http://localhost:5050';
+  #socketUrl = 'ws://localhost:5050';
   #socket = null;
   #handshakeAcknowledged = false;
   #projectSecret = null;
@@ -47,8 +47,8 @@ class CMSCureSDK extends EventTarget {
       return;
     }
 
-    const defaultServerUrl = 'https://gateway.cmscure.com';
-    const defaultSocketUrl = 'wss://app.cmscure.com';
+    const defaultServerUrl = 'http://localhost:5050';
+    const defaultSocketUrl = 'ws://localhost:5050';
 
     this.#config = { ...config };
     this.#desiredDefaultLanguage = config.defaultLanguage;
@@ -72,6 +72,10 @@ class CMSCureSDK extends EventTarget {
     this.#handshakeAcknowledged = false;
 
     console.log('[CMSCureSDK] Configuration set.');
+    
+    // Fire initial content update with cached data
+    this.dispatchEvent(new CustomEvent('contentUpdated', { detail: { reason: 'CachedDataLoaded' } }));
+    
     await this.#authenticateAndSync();
   }
 
@@ -654,15 +658,10 @@ class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/translations/${this.#config.projectId}/${tab}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.#authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.#config.projectId,
-          tabName: tab
-        })
+          'Authorization': `Bearer ${this.#authToken}`
+        }
       });
 
       if (response.status === 404) {
@@ -702,14 +701,10 @@ class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/images/${this.#config.projectId}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.#authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.#config.projectId
-        })
+          'Authorization': `Bearer ${this.#authToken}`
+        }
       });
 
       if (response.status === 404) return;
@@ -749,14 +744,10 @@ class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/colors/${this.#config.projectId}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.#authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.#config.projectId
-        })
+          'Authorization': `Bearer ${this.#authToken}`
+        }
       });
 
       if (response.status === 404) return;
@@ -795,15 +786,10 @@ class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/store/${this.#config.projectId}/${apiIdentifier}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.#authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.#config.projectId,
-          apiIdentifier
-        })
+          'Authorization': `Bearer ${this.#authToken}`
+        }
       });
 
       if (response.status === 404) return;

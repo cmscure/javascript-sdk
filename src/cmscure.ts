@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.3.2
+ * @version 1.3.5
  * @author CMSCure Team
  * @license MIT
  */
@@ -63,7 +63,7 @@ export class CMSCureSDK extends EventTarget {
   private currentLanguage: string = 'en';
   private cache: Record<string, Record<string, Record<string, string>>> = {};
   private dataStoreCache: Record<string, DataStoreItem[]> = {};
-  private serverUrl: string = 'https://app.cmscure.com';
+  private serverUrl: string = 'https://gateway.cmscure.com';
   private socketUrl: string = 'wss://app.cmscure.com';
   private socket: Socket | null = null;
   private handshakeAcknowledged = false;
@@ -122,6 +122,10 @@ export class CMSCureSDK extends EventTarget {
     this.handshakeAcknowledged = false;
 
     console.log('[CMSCureSDK] Configuration set.');
+    
+    // Fire initial content update with cached data
+    this.dispatchEvent(new CustomEvent('contentUpdated', { detail: { reason: 'CachedDataLoaded' } }));
+    
     await this.authenticateAndSync();
   }
 
@@ -732,15 +736,10 @@ export class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.serverUrl}/api/sdk/translations/${this.config.projectId}/${tab}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.config.projectId,
-          tabName: tab
-        })
+          'Authorization': `Bearer ${this.authToken}`
+        }
       });
 
       if (response.status === 404) {
@@ -833,14 +832,10 @@ export class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.serverUrl}/api/sdk/colors/${this.config.projectId}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.config.projectId
-        })
+          'Authorization': `Bearer ${this.authToken}`
+        }
       });
 
       if (response.status === 404) return;
@@ -882,15 +877,10 @@ export class CMSCureSDK extends EventTarget {
 
     try {
       const response = await fetch(`${this.serverUrl}/api/sdk/store/${this.config.projectId}/${apiIdentifier}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          projectId: this.config.projectId,
-          apiIdentifier
-        })
+          'Authorization': `Bearer ${this.authToken}`
+        }
       });
 
       if (response.status === 404) return;

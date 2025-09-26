@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2025-09-26
+
+### Added
+- **NEW**: Dedicated colors API endpoint (`/api/sdk/colors/:projectId`) for better performance
+- **NEW**: Immediate cached data loading with `CachedDataLoaded` event for instant UI updates
+- **NEW**: Enhanced localStorage persistence for all SDK state and cached content
+- **NEW**: Real-time color management with live updates and nickname support
+
+### Fixed
+- **CRITICAL**: Resolved 404 errors on colors API by implementing proper endpoint routing
+- **FIXED**: HTTP methods now use GET requests for all data fetching (translations, colors, images, data stores)
+- **FIXED**: Synchronized TypeScript and JavaScript implementations for consistent behavior
+- **FIXED**: LocalStorage state management now properly persists and loads on page refresh
+
+### Enhanced
+- **Performance**: Colors now load from dedicated endpoint instead of translations workaround
+- **UX**: Cached content displays immediately while fresh data loads in background
+- **Reliability**: Proper error handling and fallbacks for all API endpoints
+- **Developer Experience**: Better event ordering and lifecycle management
+
+### Technical
+- Updated all endpoints to use GET requests for better caching and performance
+- Added proper backend route for colors with dedicated controller
+- Enhanced event system for better UI synchronization
+- Improved localStorage management for persistent user experience
+
 ## [1.1.1] - 2025-09-24
 
 ### Fixed
