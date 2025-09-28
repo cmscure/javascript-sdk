@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.3.5
+ * @version 1.4.0
  * @author CMSCure Team
  * @license MIT
  */
@@ -14,8 +14,6 @@ export interface CMSCureConfig {
   apiKey: string;
   defaultLanguage?: string;
   projectSecret?: string;
-  serverUrl?: string;
-  socketUrl?: string;
 }
 
 export interface TranslationKey {
@@ -54,7 +52,7 @@ export interface TranslationResponse {
   timestamp: string;
 }
 
-export class CMSCureSDK extends EventTarget {
+class CMSCureSDK extends EventTarget {
   private static instance: CMSCureSDK | null = null;
   private config: CMSCureConfig | null = null;
   private authToken: string | null = null;
@@ -63,8 +61,8 @@ export class CMSCureSDK extends EventTarget {
   private currentLanguage: string = 'en';
   private cache: Record<string, Record<string, Record<string, string>>> = {};
   private dataStoreCache: Record<string, DataStoreItem[]> = {};
-  private serverUrl: string = 'https://gateway.cmscure.com';
-  private socketUrl: string = 'wss://app.cmscure.com';
+  private readonly serverUrl: string = 'https://gateway.cmscure.com';
+  private readonly socketUrl: string = 'wss://app.cmscure.com';
   private socket: Socket | null = null;
   private handshakeAcknowledged = false;
   private projectSecret: string | null = null;
@@ -80,6 +78,10 @@ export class CMSCureSDK extends EventTarget {
   private imagesSyncInFlight = false;
   private autoLanguageResolved = false;
   private desiredDefaultLanguage: string | undefined;
+  private bindingChannels: Map<string, {
+    listeners: Set<(value: any, detail?: Record<string, any>) => void>;
+    lastValue: any;
+  }> = new Map();
 
   constructor() {
     super();
@@ -99,21 +101,7 @@ export class CMSCureSDK extends EventTarget {
   async configure(config: CMSCureConfig): Promise<void> {
     this.config = { ...config };
     this.desiredDefaultLanguage = config.defaultLanguage;
-    const defaultServerUrl = 'https://gateway.cmscure.com';
-    const defaultSocketUrl = 'wss://app.cmscure.com';
-
     this.projectSecret = config.projectSecret ?? null;
-    this.serverUrl = config.serverUrl ?? defaultServerUrl;
-
-    if (config.socketUrl) {
-      this.socketUrl = config.socketUrl;
-    } else if (config.serverUrl && this.isGatewayUrl(config.serverUrl)) {
-      this.socketUrl = defaultSocketUrl;
-    } else if (config.serverUrl) {
-      this.socketUrl = this.deriveSocketUrl(config.serverUrl);
-    } else {
-      this.socketUrl = defaultSocketUrl;
-    }
     this.autoLanguageResolved = false;
     this.autoSubscribedTabs.clear();
     this.autoSubscribedStores.clear();
@@ -124,7 +112,7 @@ export class CMSCureSDK extends EventTarget {
     console.log('[CMSCureSDK] Configuration set.');
     
     // Fire initial content update with cached data
-    this.dispatchEvent(new CustomEvent('contentUpdated', { detail: { reason: 'CachedDataLoaded' } }));
+    this.emitContentUpdated({ reason: 'CachedDataLoaded' });
     
     await this.authenticateAndSync();
   }
@@ -136,11 +124,16 @@ export class CMSCureSDK extends EventTarget {
     return this.currentLanguage;
   }
 
+  getCurrentLanguage(): string {
+    return this.getLanguage();
+  }
+
   /**
    * Sets the current language and updates the UI
    */
-  setLanguage(language: string): void {
+  async setLanguage(language: string): Promise<void> {
     this.applyLanguage(language, { emitEvents: true, reason: 'LanguageChanged' });
+    await this.refreshAutoSubscribedContent();
   }
 
   private applyLanguage(language: string, options: { emitEvents: boolean; reason: string }): void {
@@ -166,26 +159,31 @@ export class CMSCureSDK extends EventTarget {
       this.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: resolved, previous: previousLanguage } }));
     }
 
-    this.dispatchEvent(new CustomEvent('contentUpdated', { detail: { reason: options.reason, language: resolved, previousLanguage } }));
-    this.refreshAutoSubscribedContent();
+    this.emitContentUpdated({ reason: options.reason, language: resolved, previousLanguage });
   }
 
-  private refreshAutoSubscribedContent(): void {
+  private async refreshAutoSubscribedContent(): Promise<void> {
+    const tasks: Promise<void>[] = [];
+
     this.autoSubscribedTabs.forEach(tab => {
-      void this.syncTab(tab, { reason: 'LanguageChange' });
+      tasks.push(this.syncTab(tab, { reason: 'LanguageChange' }));
     });
 
     if (this.autoSubscribedColors) {
-      void this.syncColors({ reason: 'LanguageChange' });
+      tasks.push(this.syncColors({ reason: 'LanguageChange' }));
     }
 
     if (this.autoSubscribedImages) {
-      void this.syncImages({ reason: 'LanguageChange' });
+      tasks.push(this.syncImages({ reason: 'LanguageChange' }));
     }
 
     this.autoSubscribedStores.forEach(store => {
-      void this.syncStore(store, { reason: 'LanguageChange' });
+      tasks.push(this.syncStore(store, { reason: 'LanguageChange' }));
     });
+
+    if (tasks.length > 0) {
+      await Promise.allSettled(tasks);
+    }
   }
 
   /**
@@ -232,6 +230,7 @@ export class CMSCureSDK extends EventTarget {
     if (resolved) {
       this.autoLanguageResolved = true;
       this.applyLanguage(resolved, { emitEvents: true, reason: 'InitialLanguageResolved' });
+      void this.refreshAutoSubscribedContent();
     }
   }
 
@@ -273,66 +272,199 @@ export class CMSCureSDK extends EventTarget {
   /**
    * Gets a translation for a specific key and tab
    */
-  translation(key: string, tab: string): string {
+  translation(key: string, tab: string, defaultValue?: string): string {
     this.ensureTabSubscription(tab);
     const value = this.cache[tab]?.[key]?.[this.currentLanguage];
-    if (!value) {
+    if (!value && this.config) {
       void this.syncTab(tab, { reason: 'CacheMiss' });
     }
-    return value || `[${tab}:${key}]`;
+    return value ?? defaultValue ?? `[${tab}:${key}]`;
   }
 
   /**
    * Gets an image URL for a given key
    */
-  image(key: string): string | null {
+  image(key: string, defaultValue?: string | null): string | null {
     this.ensureImagesSubscription();
     const url = this.cache['__images__']?.[key]?.['url'] || null;
-    if (!url) {
+    if (!url && this.config) {
       void this.syncImages({ reason: 'ImageCacheMiss' });
     }
-    return url;
+    return url ?? defaultValue ?? null;
   }
 
   /**
    * Gets a color value for a given key
    */
-  color(key: string): string | null {
+  color(key: string, defaultValue?: string | null): string | null {
     this.ensureColorsSubscription();
     const value = this.cache['__colors__']?.[key]?.['hex'] || null;
-    if (!value) {
+    if (!value && this.config) {
       void this.syncColors({ reason: 'ColorCacheMiss' });
     }
-    return value;
+    return value ?? defaultValue ?? null;
   }
 
   /**
    * Gets data store items by API identifier
    */
-  dataStore(apiIdentifier: string): DataStoreItem[] {
+  dataStore(apiIdentifier: string, defaultValue: DataStoreItem[] = []): DataStoreItem[] {
     this.ensureStoreSubscription(apiIdentifier);
-    return this.dataStoreCache[apiIdentifier] || [];
+    return this.dataStoreCache[apiIdentifier] || defaultValue;
+  }
+
+  /**
+   * Resolves a CMSCure reference string (e.g., `homepage:hero_title`, `color:primary_color`).
+   */
+  resolve(reference: string, defaultValue?: any): any {
+    if (!reference) {
+      return defaultValue ?? null;
+    }
+
+    const trimmed = reference.trim();
+    if (!trimmed) {
+      return defaultValue ?? null;
+    }
+
+    const parts = trimmed.split(':');
+    if (parts.length === 0) {
+      return defaultValue ?? null;
+    }
+
+    const prefix = parts[0];
+    const remainder = parts.slice(1).join(':');
+
+    switch (prefix) {
+      case 'color':
+        return this.color(remainder, defaultValue ?? null);
+      case 'image':
+        return this.image(remainder, defaultValue ?? null);
+      case 'store': {
+        const fallback = Array.isArray(defaultValue) ? defaultValue : [];
+        return this.dataStore(remainder, fallback);
+      }
+      case 'meta':
+        switch (remainder) {
+          case 'language':
+          case 'current_language':
+            return this.getLanguage();
+          case 'languages':
+          case 'available_languages':
+            return this.getAvailableLanguages();
+          case 'auth_token':
+            return this.authToken;
+          default:
+            return defaultValue ?? null;
+        }
+      default:
+        if (!remainder) {
+          return defaultValue ?? `[${prefix}:]`;
+        }
+        return this.translation(remainder, prefix, typeof defaultValue === 'string' ? defaultValue : undefined);
+    }
+  }
+
+  /**
+   * Observes a CMSCure reference and invokes the listener whenever the value changes.
+   */
+  observe(
+    reference: string,
+    listener: (value: any, detail?: Record<string, any>) => void,
+    options: { defaultValue?: any } = {}
+  ): () => void {
+    const normalized = reference?.trim();
+    if (!normalized) {
+      throw new Error('[CMSCureSDK] observe() requires a non-empty reference string.');
+    }
+
+    let channel = this.bindingChannels.get(normalized);
+    if (!channel) {
+      channel = {
+        listeners: new Set(),
+        lastValue: this.resolve(normalized, options.defaultValue)
+      };
+      this.bindingChannels.set(normalized, channel);
+    }
+    channel.listeners.add(listener);
+
+    try {
+      listener(channel.lastValue, { reason: 'Initial' });
+    } catch (error) {
+      console.error(`[CMSCureSDK] Binding listener for '${normalized}' failed during initial invocation.`, error);
+    }
+
+    return () => {
+      const current = this.bindingChannels.get(normalized);
+      if (!current) {
+        return;
+      }
+      current.listeners.delete(listener);
+      if (current.listeners.size === 0) {
+        this.bindingChannels.delete(normalized);
+      }
+    };
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.config) {
+      console.warn('[CMSCureSDK] Cannot refresh before configure().');
+      return;
+    }
+    console.log('[CMSCureSDK] Refresh requested.');
+    await this.authenticateAndSync();
+    this.emitContentUpdated({ reason: 'ManualRefresh' });
+  }
+
+  private notifyBindings(detail: Record<string, any> = {}): void {
+    this.bindingChannels.forEach((channel, reference) => {
+      const value = this.resolve(reference);
+
+      if (Object.is(channel.lastValue, value)) {
+        return;
+      }
+
+      channel.lastValue = value;
+
+      channel.listeners.forEach(listener => {
+        try {
+          listener(value, detail);
+        } catch (error) {
+          console.error(`[CMSCureSDK] Binding listener for '${reference}' threw an error.`, error);
+        }
+      });
+    });
+  }
+
+  private emitContentUpdated(detail: Record<string, any>): void {
+    this.dispatchEvent(new CustomEvent('contentUpdated', { detail }));
+    this.notifyBindings(detail);
   }
 
   private ensureTabSubscription(tab: string): void {
     if (!tab) return;
     if (!this.autoSubscribedTabs.has(tab)) {
       this.autoSubscribedTabs.add(tab);
-      void this.syncTab(tab, { reason: 'AutoSubscribe' });
+      if (this.config) {
+        void this.syncTab(tab, { reason: 'AutoSubscribe' });
+      }
     }
   }
 
   private ensureColorsSubscription(): void {
     if (!this.autoSubscribedColors) {
       this.autoSubscribedColors = true;
-      void this.syncColors({ reason: 'AutoSubscribe' });
+      if (this.config) {
+        void this.syncColors({ reason: 'AutoSubscribe' });
+      }
     }
   }
 
   private ensureImagesSubscription(): void {
     if (!this.autoSubscribedImages) {
       this.autoSubscribedImages = true;
-      void this.syncImages({ reason: 'AutoSubscribe' });
+      if (this.config) {
+        void this.syncImages({ reason: 'AutoSubscribe' });
+      }
     }
   }
 
@@ -340,7 +472,9 @@ export class CMSCureSDK extends EventTarget {
     if (!apiIdentifier) return;
     if (!this.autoSubscribedStores.has(apiIdentifier)) {
       this.autoSubscribedStores.add(apiIdentifier);
-      void this.syncStore(apiIdentifier, { reason: 'AutoSubscribe' });
+      if (this.config) {
+        void this.syncStore(apiIdentifier, { reason: 'AutoSubscribe' });
+      }
     }
   }
 
@@ -384,33 +518,6 @@ export class CMSCureSDK extends EventTarget {
     this.storageSet('cmscure_known_stores', JSON.stringify(Array.from(this.knownStores)));
   }
 
-  private deriveSocketUrl(baseUrl: string): string {
-    try {
-      const parsed = new URL(baseUrl);
-      if (parsed.protocol === 'https:') {
-        parsed.protocol = 'wss:';
-      } else if (parsed.protocol === 'http:') {
-        parsed.protocol = 'ws:';
-      }
-      parsed.pathname = '/';
-      parsed.hash = '';
-      parsed.search = '';
-      return parsed.toString().replace(/\/$/, '');
-    } catch (error) {
-      console.warn('[CMSCureSDK] Invalid serverUrl provided, falling back to default socket URL.', error);
-      return 'wss://app.cmscure.com';
-    }
-  }
-
-  private isGatewayUrl(url: string): boolean {
-    try {
-      const hostname = new URL(url).hostname.toLowerCase();
-      return hostname.includes('gateway') || hostname.includes('sdk-edge');
-    } catch (error) {
-      console.warn('[CMSCureSDK] Unable to inspect serverUrl hostname.', error);
-      return false;
-    }
-  }
 
   private updateAvailableLanguageLookup(): void {
     this.availableLanguageLookup = new Map(
@@ -573,7 +680,7 @@ export class CMSCureSDK extends EventTarget {
     socket.on('handshake_ack', () => {
       console.log('[CMSCureSDK] Socket handshake acknowledged.');
       this.handshakeAcknowledged = true;
-      this.refreshAutoSubscribedContent();
+      void this.refreshAutoSubscribedContent();
     });
 
     socket.on('handshake_error', payload => {
@@ -709,7 +816,7 @@ export class CMSCureSDK extends EventTarget {
       this.saveCacheToStorage();
       
       // Dispatch a final event indicating the initial sync is complete
-      this.dispatchEvent(new CustomEvent('contentUpdated', { detail: { reason: 'InitialSyncComplete' } }));
+      this.emitContentUpdated({ reason: 'InitialSyncComplete' });
       console.log('[CMSCureSDK] Initial sync complete.');
 
       void this.initializeSocket();
@@ -755,9 +862,7 @@ export class CMSCureSDK extends EventTarget {
       this.knownTabs.add(tab);
       this.saveCacheToStorage();
 
-      this.dispatchEvent(new CustomEvent('contentUpdated', {
-        detail: { reason: options.reason ?? 'TabSynced', tab, timestamp: Date.now() }
-      }));
+      this.emitContentUpdated({ reason: options.reason ?? 'TabSynced', tab, timestamp: Date.now() });
 
       console.log(`[CMSCureSDK] Synced tab: ${tab}`);
     } catch (error) {
@@ -804,9 +909,7 @@ export class CMSCureSDK extends EventTarget {
       this.saveCacheToStorage();
       this.prefetchImages(Object.values(imageMap).map(item => item.url));
 
-      this.dispatchEvent(new CustomEvent('contentUpdated', {
-        detail: { reason: options.reason ?? 'ImagesSynced', timestamp: Date.now() }
-      }));
+      this.emitContentUpdated({ reason: options.reason ?? 'ImagesSynced', timestamp: Date.now() });
 
       console.log('[CMSCureSDK] Synced images.');
     } catch (error) {
@@ -849,9 +952,7 @@ export class CMSCureSDK extends EventTarget {
       this.autoSubscribedColors = true;
       this.saveCacheToStorage();
 
-      this.dispatchEvent(new CustomEvent('contentUpdated', {
-        detail: { reason: options.reason ?? 'ColorsSynced', timestamp: Date.now() }
-      }));
+      this.emitContentUpdated({ reason: options.reason ?? 'ColorsSynced', timestamp: Date.now() });
 
       console.log('[CMSCureSDK] Synced colors.');
     } catch (error) {
@@ -892,9 +993,7 @@ export class CMSCureSDK extends EventTarget {
       this.autoSubscribedStores.add(apiIdentifier);
       this.saveCacheToStorage();
 
-      this.dispatchEvent(new CustomEvent('contentUpdated', {
-        detail: { reason: options.reason ?? 'DataStoreSynced', store: apiIdentifier, timestamp: Date.now() }
-      }));
+      this.emitContentUpdated({ reason: options.reason ?? 'DataStoreSynced', store: apiIdentifier, timestamp: Date.now() });
 
       console.log(`[CMSCureSDK] Synced data store: ${apiIdentifier}`);
     } catch (error) {
@@ -905,16 +1004,24 @@ export class CMSCureSDK extends EventTarget {
   }
 }
 
+// Create and export singleton instance
+const cmscure = new CMSCureSDK();
+
 // Default export for ES modules
-export default CMSCureSDK;
+export default cmscure;
+
+// Also export the class for advanced use cases
+export { CMSCureSDK };
 
 // For UMD builds
 declare global {
   interface Window {
     CMSCureSDK: typeof CMSCureSDK;
+    cmscure: CMSCureSDK;
   }
 }
 
 if (typeof window !== 'undefined') {
   window.CMSCureSDK = CMSCureSDK;
+  window.cmscure = cmscure;
 }

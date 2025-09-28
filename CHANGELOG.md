@@ -1,9 +1,43 @@
+# [1.4.0](https://github.com/cmscure/javascript-sdk/compare/v1.3.2...v1.4.0) (2025-09-27)
+
+### Added
+- **Declarative bindings:** new `resolve()` and `observe()` helpers remove the need for manual `contentUpdated` listeners; bind `homepage:hero_title`, `color:primary_color`, or `image:logo` and let the SDK push updates automatically.
+- **Reference parsing:** built-in support for `color:*`, `image:*`, `store:*`, and `meta:*` references so UI code can work with a single string format across translations, colors, images, and data stores.
+- **React sample:** refreshed React test app now shows direct `sdk.observe()` bindings—one line per field with realtime updates.
+
+### Changed
+- **Immutable endpoints:** REST traffic is now permanently routed through `https://gateway.cmscure.com` and websockets through `wss://app.cmscure.com`—`serverUrl` and `socketUrl` overrides have been removed for safety.
+- **Docs:** README and landing-page examples now showcase the new binding helpers and simplified configuration.
+
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.6] - 2025-09-28
+
+### Added
+- **NEW**: Complete TypeScript definitions (`types/index.d.ts`) for enhanced IntelliSense support
+- **NEW**: JSDoc definitions (`types/jsdoc-definitions.js`) for JavaScript projects
+- **NEW**: Comprehensive i18n backend support with locale detection middleware
+- **NEW**: React TypeScript test application demonstrating all SDK features
+- **NEW**: Locale detection from Accept-Language headers, X-Locale headers, query params, and request body
+
+### Enhanced
+- **Developer Experience**: Full TypeScript support with proper interfaces and type definitions
+- **i18n Support**: Backend now detects user locale from multiple sources with priority system
+- **Documentation**: Complete React test app with all SDK features demonstrated
+- **IntelliSense**: Enhanced IDE support for both TypeScript and JavaScript projects
+
+### Technical
+- Added `types` field to package.json for proper TypeScript declaration distribution
+- Implemented i18n middleware for conventional locale handling in backend
+- Created comprehensive React test application for validation and demonstration
+- Updated SDK controller to use detected locale for enhanced localization
 
 ## [1.3.5] - 2025-09-26
 

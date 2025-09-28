@@ -1,16 +1,26 @@
 {
   "name": "@cmscure/javascript-sdk",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "description": "Official JavaScript SDK for CMSCure content management platform",
   "type": "module",
-  "main": "dist/cmscure.js",
+  "main": "dist/cmscure.esm.js",
   "module": "dist/cmscure.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/cmscure.esm.js",
+      "require": "./dist/cmscure.js",
+      "types": "./types/index.d.ts"
+    }
+  },
   "browser": "dist/cmscure.umd.js",
   "unpkg": "dist/cmscure.umd.min.js",
   "jsdelivr": "dist/cmscure.umd.min.js",
+  "types": "types/index.d.ts",
+  "typings": "types/index.d.ts",
   "files": [
     "dist/**/*",
     "src/**/*",
+    "types/**/*",
     "README.md",
     "CHANGELOG.md"
   ],

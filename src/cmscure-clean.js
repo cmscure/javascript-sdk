@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.2.1
+ * @version 1.4.0
  * @author CMSCure Team
  * @license MIT
  */
@@ -17,7 +17,7 @@ class CMSCureSDK extends EventTarget {
   #availableLanguages = ['en'];
   #currentLanguage = 'en';
   #isInitialized = false;
-  #serverUrl = 'https://app.cmscure.com';
+  #serverUrl = 'https://gateway.cmscure.com';
 
   constructor() {
     super();
@@ -281,6 +281,11 @@ class CMSCureSDK extends EventTarget {
         });
         
         console.log(`[CMSCureSDK] Synced tab: ${tab}`);
+        
+        // Dispatch specific event for React components
+        this.dispatchEvent(new CustomEvent('translationsUpdated', {
+          detail: { tab, timestamp: Date.now() }
+        }));
       } else {
         console.warn(`[CMSCureSDK] Failed to sync tab ${tab}: ${response.status}`);
       }
@@ -303,6 +308,11 @@ class CMSCureSDK extends EventTarget {
         const data = await response.json();
         this.#cache['__images__'] = data;
         console.log('[CMSCureSDK] Synced images.');
+        
+        // Dispatch specific event for React components
+        this.dispatchEvent(new CustomEvent('imagesUpdated', {
+          detail: { timestamp: Date.now() }
+        }));
       } else {
         console.warn(`[CMSCureSDK] Failed to sync images: ${response.status}`);
       }
@@ -325,6 +335,11 @@ class CMSCureSDK extends EventTarget {
         const data = await response.json();
         this.#cache['__colors__'] = data;
         console.log('[CMSCureSDK] Synced colors.');
+        
+        // Dispatch specific event for React components  
+        this.dispatchEvent(new CustomEvent('colorsUpdated', {
+          detail: { timestamp: Date.now() }
+        }));
       } else {
         console.warn(`[CMSCureSDK] Failed to sync colors: ${response.status}`);
       }

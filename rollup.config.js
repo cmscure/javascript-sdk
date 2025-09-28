@@ -49,7 +49,7 @@ const configs = [
       format: 'cjs',
       banner,
       sourcemap: true,
-      exports: 'default'
+      exports: 'named'
     }
   },
   
@@ -61,7 +61,8 @@ const configs = [
       format: 'umd',
       name: 'CMSCureSDK',
       banner,
-      sourcemap: true
+      sourcemap: true,
+      exports: 'named'
     }
   }
 ];
@@ -77,7 +78,8 @@ if (isProduction) {
         file: 'dist/cmscure.esm.min.js',
         format: 'esm',
         banner,
-        sourcemap: true
+        sourcemap: true,
+        exports: 'named'
       }
     },
     
@@ -90,7 +92,8 @@ if (isProduction) {
         format: 'umd',
         name: 'CMSCureSDK',
         banner,
-        sourcemap: true
+        sourcemap: true,
+        exports: 'named'
       }
     }
   );

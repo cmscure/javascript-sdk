@@ -13,11 +13,10 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 ## 🔄 What’s New
 
-- **Automatic language resolution** – the SDK now chooses the best language using stored preference → configured default → browser locale → English fallback.
-- **Persistent caching** – translations, colors, images, and data stores are written to local storage for instant loads and offline resilience.
-- **Real-time sync (optional)** – supply a `projectSecret` to receive live updates through secure Socket.IO channels, matching the iOS SDK experience.
-- **Configurable endpoints** – override `serverUrl` and `socketUrl` for staging or self-hosted environments.
-- **Edge gateway default** – REST calls target `https://gateway.cmscure.com` out of the box (swap to your own proxy if needed) while sockets remain on `app.cmscure.com`.
+- **Declarative bindings** – reference any CMS value with strings like `homepage:hero_title`, `color:primary_color`, or `image:logo` and let `resolve()` / `observe()` keep your UI synced automatically.
+- **Auto-realtime updates** – `observe()` handles caching, subscriptions, and socket re-syncs so you never wire `contentUpdated` listeners by hand.
+- **Gateway-first networking** – REST traffic is routed through `https://gateway.cmscure.com` while realtime sockets stay on `wss://app.cmscure.com` for the best mix of security and latency.
+- **Immutable configuration** – project ID, API key, and optional project secret are all you configure; endpoints are locked for consistency and safety.
 
 ## ✨ Key Features
 
@@ -61,7 +60,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.2.6/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.0/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -73,63 +72,55 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.2.6/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.0/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
-    <h1 data-cure-key="common:brand_name">[Loading...]</h1>
-    <p data-cure-key="homepage:hero_subtitle">[Loading...]</p>
-    <img data-cure-image="deals_banner" src="placeholder.jpg" alt="Hero">
-    
-    <!-- Dynamic colors -->
-    <div style="background-color: var(--primary-color); padding: 1rem; border-radius: 8px;">
-        <span style="color: white;">Dynamic Background Color</span>
-    </div>
-    
-    <select id="language-selector">
-        <option value="en">English</option>
-        <option value="fr">Français</option>
-        <option value="es">Español</option>
-    </select>
+    <h1 data-cure="common:brand_name">[Brand Name]</h1>
+    <p data-cure="homepage:hero_subtitle">[Hero Subtitle]</p>
+    <button data-cure-color="secondary_button">Call To Action</button>
+    <img data-cure-image="deals_banner" src="placeholder.jpg" alt="Deals Banner">
 
     <script>
         const cure = new CMSCureSDK();
 
-        async function init() {
+        async function main() {
             await cure.configure({
                 projectId: 'your-project-id',
                 apiKey: 'your-api-key',
-                projectSecret: 'optional-project-secret-for-realtime'
+                projectSecret: 'optional-project-secret'
             });
 
-            updateUI();
+            const brand = document.querySelector('[data-cure="common:brand_name"]');
+            const subtitle = document.querySelector('[data-cure="homepage:hero_subtitle"]');
+            const cta = document.querySelector('[data-cure-color="secondary_button"]');
+            const banner = document.querySelector('[data-cure-image="deals_banner"]');
+
+            cure.observe('common:brand_name', value => {
+                if (brand) {
+                    brand.textContent = value ?? '[common:brand_name]';
+                }
+            }, { defaultValue: '[common:brand_name]' });
+
+            cure.observe('homepage:hero_subtitle', value => {
+                if (subtitle) {
+                    subtitle.textContent = value ?? '[homepage:hero_subtitle]';
+                }
+            }, { defaultValue: '[homepage:hero_subtitle]' });
+
+            cure.observe('color:secondary_button', value => {
+                if (cta && typeof value === 'string') {
+                    cta.style.backgroundColor = value;
+                }
+            }, { defaultValue: '#663BEB' });
+
+            cure.observe('image:deals_banner', value => {
+                if (banner && typeof value === 'string') {
+                    banner.src = value;
+                }
+            }, { defaultValue: null });
         }
 
-        function updateUI() {
-            document.querySelectorAll('[data-cure-key]').forEach(element => {
-                const [tab, key] = element.dataset.cureKey.split(':');
-                const value = cure.translation(key, tab);
-                if (value) element.textContent = value;
-            });
-
-            document.querySelectorAll('[data-cure-image]').forEach(element => {
-                const imageKey = element.dataset.cureImage;
-                const imageUrl = cure.image(imageKey);
-                if (imageUrl) element.src = imageUrl;
-            });
-
-            const primaryColor = cure.color('primary_color');
-            if (primaryColor) {
-                document.documentElement.style.setProperty('--primary-color', primaryColor);
-            }
-        }
-
-        cure.addEventListener('contentUpdated', () => updateUI());
-
-        document.getElementById('language-selector').addEventListener('change', (event) => {
-            cure.setLanguage(event.target.value);
-        });
-
-        init();
+        main();
     </script>
 </body>
 </html>
@@ -138,71 +129,57 @@ yarn add @cmscure/javascript-sdk
 ### React/Next.js
 
 ```jsx
-import { useEffect, useState } from 'react';
-import CMSCureSDK from '@cmscure/javascript-sdk';
+import { useEffect, useMemo, useState } from 'react';
+import { CMSCureSDK } from '@cmscure/javascript-sdk';
 
-const cure = new CMSCureSDK();
-
-function App() {
-  const [content, setContent] = useState({});
-  const [colors, setColors] = useState({});
-  const [language, setLanguage] = useState('en');
+const App = () => {
+  const sdk = useMemo(() => new CMSCureSDK(), []);
+  const [heroTitle, setHeroTitle] = useState('[homepage:hero_title]');
+  const [heroSubtitle, setHeroSubtitle] = useState('[homepage:hero_subtitle]');
+  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [buttonColor, setButtonColor] = useState('#663BEB');
 
   useEffect(() => {
-    const handleContentUpdate = () => {
-      setContent({
-        brandName: cure.translation('brand_name', 'common'),
-        subtitle: cure.translation('hero_subtitle', 'homepage'),
-        footerText: cure.translation('footer_text', 'common'),
-        dealsImage: cure.image('deals_banner')
-      });
-      
-      setColors({
-        primary: cure.color('primary_color'),
-        accent: cure.color('primary_accent'),
-        button: cure.color('secondary_button')
-      });
+    void sdk.configure({
+      projectId: process.env.NEXT_PUBLIC_CMSCURE_PROJECT_ID,
+      apiKey: process.env.NEXT_PUBLIC_CMSCURE_API_KEY,
+      projectSecret: process.env.NEXT_PUBLIC_CMSCURE_SECRET,
+      defaultLanguage: 'en'
+    });
+
+    const unsubscribeTitle = sdk.observe('homepage:hero_title', value => {
+      setHeroTitle(typeof value === 'string' && value ? value : '[homepage:hero_title]');
+    }, { defaultValue: '[homepage:hero_title]' });
+
+    const unsubscribeSubtitle = sdk.observe('homepage:hero_subtitle', value => {
+      setHeroSubtitle(typeof value === 'string' && value ? value : '[homepage:hero_subtitle]');
+    }, { defaultValue: '[homepage:hero_subtitle]' });
+
+    const unsubscribeImage = sdk.observe('image:deals_banner', value => {
+      setHeroImage(typeof value === 'string' && value ? value : null);
+    }, { defaultValue: null });
+
+    const unsubscribeColor = sdk.observe('color:secondary_button', value => {
+      setButtonColor(typeof value === 'string' && value ? value : '#663BEB');
+    }, { defaultValue: '#663BEB' });
+
+    return () => {
+      unsubscribeTitle();
+      unsubscribeSubtitle();
+      unsubscribeImage();
+      unsubscribeColor();
     };
-
-    const initSDK = async () => {
-      await cure.configure({
-        projectId: 'your-project-id',
-        apiKey: 'your-api-key',
-        projectSecret: process.env.NEXT_PUBLIC_CMSCURE_SECRET
-      });
-
-      handleContentUpdate();
-    };
-
-    initSDK();
-    cure.addEventListener('contentUpdated', handleContentUpdate);
-    return () => cure.removeEventListener('contentUpdated', handleContentUpdate);
-  }, []);
-
-  const handleLanguageChange = (lang) => {
-    cure.setLanguage(lang);
-    setLanguage(lang);
-  };
+  }, [sdk]);
 
   return (
-    <div>
-      <h1 style={{ color: colors.primary }}>{content.brandName}</h1>
-      <p>{content.subtitle}</p>
-      <img src={content.dealsImage} alt="Deals Banner" />
-      <button style={{ backgroundColor: colors.button }}>
-        Click Me
-      </button>
-      
-      <select value={language} onChange={(e) => handleLanguageChange(e.target.value)}>
-        <option value="en">English</option>
-        <option value="fr">Français</option>
-        <option value="es">Español</option>
-      </select>
-      
-      <footer>{content.footerText}</footer>
-    </div>
+    <section>
+      <h1>{heroTitle}</h1>
+      <p>{heroSubtitle}</p>
+      {heroImage && <img src={heroImage} alt="Deals" />}
+      <button style={{ backgroundColor: buttonColor }}>Learn more</button>
+    </section>
   );
-}
+};
 
 export default App;
 ```
@@ -212,14 +189,14 @@ export default App;
 ```vue
 <template>
   <div>
-    <h1>{{ content.title }}</h1>
-    <p>{{ content.subtitle }}</p>
-    <img :src="content.heroImage" alt="Hero" />
-    
-    <select v-model="language" @change="handleLanguageChange">
-      <option value="en">English</option>
-      <option value="fr">Français</option>
-      <option value="es">Español</option>
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+    <img v-if="heroImage" :src="heroImage" alt="Hero" />
+
+    <select v-model="language" @change="setLanguage(language)">
+      <option v-for="lang in languages" :key="lang" :value="lang">
+        {{ lang.toUpperCase() }}
+      </option>
     </select>
   </div>
 </template>
@@ -233,8 +210,12 @@ export default {
   name: 'App',
   data() {
     return {
-      content: {},
-      language: 'en'
+      title: '[common:brand_name]',
+      subtitle: '[homepage:hero_subtitle]',
+      heroImage: null,
+      languages: ['en'],
+      language: 'en',
+      unsubscribers: []
     };
   },
   async mounted() {
@@ -244,20 +225,30 @@ export default {
       projectSecret: import.meta.env.VITE_CMSCURE_SECRET
     });
 
-    cure.addEventListener('contentUpdated', this.updateContent);
-    this.updateContent();
+    this.unsubscribers = [
+      cure.observe('common:brand_name', value => {
+        this.title = typeof value === 'string' && value ? value : '[common:brand_name]';
+      }, { defaultValue: '[common:brand_name]' }),
+      cure.observe('homepage:hero_subtitle', value => {
+        this.subtitle = typeof value === 'string' && value ? value : '[homepage:hero_subtitle]';
+      }, { defaultValue: '[homepage:hero_subtitle]' }),
+      cure.observe('image:deals_banner', value => {
+        this.heroImage = typeof value === 'string' && value ? value : null;
+      }, { defaultValue: null }),
+      cure.observe('meta:languages', value => {
+        this.languages = Array.isArray(value) && value.length ? value : ['en'];
+      }, { defaultValue: ['en'] }),
+      cure.observe('meta:language', value => {
+        this.language = typeof value === 'string' && value ? value : 'en';
+      }, { defaultValue: 'en' })
+    ];
+  },
+  beforeUnmount() {
+    this.unsubscribers.forEach(unsubscribe => unsubscribe());
   },
   methods: {
-    updateContent() {
-      this.content = {
-        title: cure.translation('brand_name', 'common'),
-        subtitle: cure.translation('hero_subtitle', 'homepage'),
-        heroImage: cure.image('deals_banner'),
-        primaryColor: cure.color('primary_color')
-      };
-    },
-    handleLanguageChange() {
-      cure.setLanguage(this.language);
+    setLanguage(lang) {
+      void cure.setLanguage(lang);
     }
   }
 };
@@ -272,86 +263,72 @@ export default {
 const cure = new CMSCureSDK();
 
 await cure.configure({
-  projectId: 'your-project-id',              // Required: CMSCure project ID
-  apiKey: 'your-api-key',                    // Required: project API key
-  defaultLanguage: 'en',                     // Optional: preferred default language
-  projectSecret: 'your-project-secret',      // Optional: enables real-time sockets
-  serverUrl: 'https://gateway.cmscure.com', // Optional: REST endpoint (defaults to SDK Edge proxy)
-  socketUrl: 'wss://app.cmscure.com'         // Optional: websocket endpoint (defaults to realtime host)
+  projectId: 'your-project-id',          // Required
+  apiKey: 'your-api-key',                // Required
+  defaultLanguage: 'en',                 // Optional preferred language
+  projectSecret: 'your-project-secret'   // Optional: enables realtime sockets
 });
 ```
 
-> **Note:** By default REST requests go through `https://gateway.cmscure.com` and sockets hit `wss://app.cmscure.com`. Override `serverUrl` for custom gateways and either keep `socketUrl` unset (auto-detects) or set it explicitly when needed.
-
-```typescript
-await cure.configure({
-  projectId: 'your-project-id',
-  apiKey: 'your-api-key',
-  serverUrl: 'https://gateway.cmscure.com', // Your edge proxy
-  socketUrl: 'wss://app.cmscure.com'        // Keep realtime on the primary host
-});
-```
+> **Note:** Endpoints are fixed for security. REST requests are proxied through `https://gateway.cmscure.com` and realtime sockets connect to `wss://app.cmscure.com`.
 
 ### Methods
 
-#### `translation(key: string, tab: string): string`
-Get a translation for a specific key and tab. Automatically caches and subscribes to real-time updates for that tab.
+#### `translation(key: string, tab: string, defaultValue?: string): string`
+Get a translation for a specific key and tab. Automatically caches and subscribes to realtime updates for that tab.
 
 ```javascript
-const brandName = cure.translation('brand_name', 'common');
-const welcomeMsg = cure.translation('welcome_message', 'homepage');
-// Returns the translated text for the current language, or [key] if not found
+const title = cure.translation('hero_title', 'homepage', '[homepage:hero_title]');
 ```
 
-#### `image(key: string): string | null`
-Get a global image URL for a specific key. Image URLs are cached and prefetched for smooth rendering.
+#### `image(key: string, defaultValue?: string | null): string | null`
+Get a global image URL by key. Image URLs are cached and prefetched for smooth rendering.
 
 ```javascript
-const dealsImage = cure.image('deals_banner');
-const logoUrl = cure.image('company_logo');
-// Returns the full image URL from your CMSCure project
+const heroBanner = cure.image('deals_banner');
 ```
 
-#### `color(key: string): string | null`
-Get a color value for a specific key. Colors stay cached and refresh silently when changed.
+#### `color(key: string, defaultValue?: string | null): string | null`
+Get a color value by key. Colors stay cached and refresh silently when changed.
 
 ```javascript
-const primaryColor = cure.color('primary_color');
-const accentColor = cure.color('primary_accent');
-document.body.style.setProperty('--primary-color', primaryColor);
-// Returns hex color values like '#00ccc9'
+const primary = cure.color('primary_color', '#663BEB');
 ```
 
-#### `dataStore(apiIdentifier: string): DataStoreItem[]`
+#### `dataStore(apiIdentifier: string, defaultValue?: any[]): any[]`
 Get data store items by API identifier. Stores are cached and resynced when updates arrive.
 
 ```javascript
-const products = cure.dataStore('products');
-const blogPosts = cure.dataStore('blog_posts');
-// Returns array of structured data items from your CMSCure project
+const products = cure.dataStore('products', []);
 ```
 
-#### `setLanguage(language: string): void`
-Change the current language.
+#### `resolve(reference: string, defaultValue?: any): any`
+Resolve a CMSCure reference string. Supports translations (`homepage:hero_title`), colors (`color:primary_color`), images (`image:logo`), data stores (`store:products`), and metadata (`meta:language`).
 
 ```javascript
-cure.setLanguage('fr');
+const heroTitle = cure.resolve('homepage:hero_title');
+const accentColor = cure.resolve('color:primary_accent', '#3B82F6');
+const languages = cure.resolve('meta:languages', ['en']);
 ```
+
+#### `observe(reference: string, listener: (value: any, detail?: { reason?: string }) => void, options?: { defaultValue?: any }): () => void`
+Observe a CMSCure reference and receive callbacks whenever the underlying value changes. Returns an unsubscribe function.
+
+```javascript
+const unsubscribe = cure.observe('homepage:hero_title', (value, detail) => {
+  document.querySelector('#hero-title').textContent = value;
+  console.log('Updated because:', detail?.reason);
+});
+```
+
+#### `setLanguage(language: string): Promise<void>`
+Switch the active language. Automatically triggers background resyncs and realtime updates.
 
 #### `getLanguage(): string`
-Get the current language. Reflects automatic resolution or manual overrides.
-
-```javascript
-const currentLang = cure.getLanguage();
-```
+Get the current language. Alias: `getCurrentLanguage()`.
 
 #### `getAvailableLanguages(): string[]`
-Get all available languages for the project.
-
-```javascript
-const languages = cure.getAvailableLanguages();
-```
-
+List the languages exposed by the project.
 ## 🔄 Runtime Behaviour
 
 ### Automatic Language Resolution
@@ -364,6 +341,11 @@ On first load the SDK restores any previously selected language. If none is stor
 - Cached values are returned instantly while background fetches refresh data on cache misses, language changes, and socket events.
 - Image URLs are prefetched into the browser cache to minimize flicker on render.
 
+### Binding Helpers
+
+- `resolve(reference)` returns the current value for any CMS reference string.
+- `observe(reference, listener)` keeps your UI in sync; it immediately calls the listener with cached data and replays updates whenever the SDK receives new content (Initial sync, language changes, realtime events, or manual refreshes).
+
 ### Real-time Updates
 
 Provide `projectSecret` during `configure()` to opt into live updates. The SDK performs an AES-GCM handshake and listens for translation, color, image, and data store events. Each event triggers a narrow resync and emits `contentUpdated`; language switches also emit `languageChanged`.
@@ -375,14 +357,9 @@ await cure.configure({
   projectSecret: 'your-project-secret' // Enables sockets
 });
 
-cure.addEventListener('contentUpdated', (event) => {
-  console.log('Content refreshed because:', event.detail.reason);
-  updateUI();
-});
-
-cure.addEventListener('languageChanged', (event) => {
-  console.log('Language changed from', event.detail.previous, 'to', event.detail.language);
-  updateUI();
+const unsubscribe = cure.observe('homepage:hero_title', (value, detail) => {
+  console.log('Content refreshed because:', detail?.reason);
+  document.querySelector('#hero-title').textContent = value;
 });
 ```
 
@@ -454,6 +431,21 @@ export function CMSProvider({ children, projectId, apiKey }) {
 }
 
 export const useCMS = () => useContext(CMSContext);
+
+export function HeroSection() {
+  const cure = useCMS();
+  const [title, setTitle] = useState('[homepage:hero_title]');
+
+  useEffect(() => {
+    const unsubscribe = cure.observe('homepage:hero_title', value => {
+      setTitle(typeof value === 'string' && value ? value : '[homepage:hero_title]');
+    }, { defaultValue: '[homepage:hero_title]' });
+
+    return () => unsubscribe();
+  }, [cure]);
+
+  return <h1>{title}</h1>;
+}
 ```
 
 ### Nuxt.js Plugin
