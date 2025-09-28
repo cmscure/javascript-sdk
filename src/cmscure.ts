@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.4.0
+ * @version 1.4.1
  * @author CMSCure Team
  * @license MIT
  */
@@ -1004,6 +1004,179 @@ class CMSCureSDK extends EventTarget {
   }
 }
 
+// Locale detection helpers for server-side integrations
+const DEFAULT_LOCALE_FALLBACK = 'en';
+
+export interface LocaleDetectionOptions {
+  fallback?: string;
+  availableLanguages?: string[];
+}
+
+export interface LocaleDetectionResult {
+  detected: string;
+  source: 'sdk_parameter' | 'x_locale_header' | 'query_parameter' | 'request_body' | 'accept_language_header' | 'fallback';
+  raw: string | null;
+  fallback: string;
+  available?: string[];
+  appliedFallback: boolean;
+}
+
+export type LocaleAwareRequest = {
+  headers?: Record<string, string | string[]>;
+  query?: Record<string, any>;
+  body?: Record<string, any>;
+  locale?: string;
+  localeInfo?: LocaleDetectionResult;
+};
+
+export type LocaleAwareResponse = {
+  set?: (name: string, value: string) => void;
+  setHeader?: (name: string, value: string) => void;
+};
+
+export type LocaleNextFunction = (err?: any) => void;
+
+function normalizeLocaleCode(locale: string | null | undefined): string | null {
+  if (!locale || typeof locale !== 'string') {
+    return null;
+  }
+
+  const trimmed = locale.trim().toLowerCase();
+  if (!trimmed) {
+    return null;
+  }
+
+  const primary = trimmed.split(/[-_]/)[0];
+  if (primary && /^[a-z]{2,3}$/.test(primary)) {
+    return primary;
+  }
+  return null;
+}
+
+function parseAcceptLanguageHeader(acceptLanguage: string | null | undefined): string | null {
+  if (!acceptLanguage || typeof acceptLanguage !== 'string') {
+    return null;
+  }
+
+  const languages = acceptLanguage
+    .split(',')
+    .map(entry => {
+      const [code, quality = 'q=1.0'] = entry.trim().split(';');
+      const qValue = parseFloat(quality.replace('q=', '')) || 1.0;
+      return { code: code.toLowerCase(), quality: qValue };
+    })
+    .sort((a, b) => b.quality - a.quality);
+
+  return languages.length > 0 ? languages[0].code : null;
+}
+
+function prepareHeaderMap(headers: Record<string, string | string[]> | undefined): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+
+  const map: Record<string, string> = {};
+  Object.keys(headers).forEach(key => {
+    const value = headers[key];
+    map[key.toLowerCase()] = Array.isArray(value) ? value[0] : value;
+  });
+  return map;
+}
+
+function detectLocaleFromRequest(req: LocaleAwareRequest = {}, options: LocaleDetectionOptions = {}): LocaleDetectionResult {
+  const fallback = normalizeLocaleCode(options.fallback) || DEFAULT_LOCALE_FALLBACK;
+  const availableLanguages = Array.isArray(options.availableLanguages)
+    ? options.availableLanguages.map(normalizeLocaleCode).filter((locale): locale is string => Boolean(locale))
+    : undefined;
+
+  const headers = prepareHeaderMap(req.headers);
+  const query = req.query || {};
+  const body = req.body || {};
+
+  const candidates: Array<{ value: string | null; source: LocaleDetectionResult['source']; raw?: string | null }> = [
+    { value: query.language ?? body.language ?? null, source: 'sdk_parameter' },
+    { value: headers['x-locale'] ?? null, source: 'x_locale_header' },
+    { value: query.locale ?? query.lang ?? null, source: 'query_parameter' },
+    { value: body.locale ?? body.lang ?? null, source: 'request_body' }
+  ];
+
+  const acceptLanguage = headers['accept-language'];
+  if (acceptLanguage) {
+    candidates.push({
+      value: parseAcceptLanguageHeader(acceptLanguage),
+      source: 'accept_language_header',
+      raw: acceptLanguage
+    });
+  }
+
+  let detected = fallback;
+  let source: LocaleDetectionResult['source'] = 'fallback';
+  let raw: string | null = null;
+
+  for (const candidate of candidates) {
+    if (!candidate || candidate.value == null) {
+      continue;
+    }
+
+    const normalized = normalizeLocaleCode(candidate.value);
+    if (normalized) {
+      detected = normalized;
+      source = candidate.source;
+      raw = candidate.raw ?? candidate.value;
+      break;
+    }
+  }
+
+  let appliedFallback = false;
+  if (availableLanguages && availableLanguages.length > 0 && !availableLanguages.includes(detected)) {
+    const fallbackCandidate = normalizeLocaleCode(options.fallback) || availableLanguages[0] || fallback;
+    detected = fallbackCandidate || fallback;
+    appliedFallback = true;
+  }
+
+  return {
+    detected,
+    source,
+    raw,
+    fallback,
+    available: availableLanguages && availableLanguages.length > 0 ? [...availableLanguages] : undefined,
+    appliedFallback
+  };
+}
+
+function setResponseHeader(res: LocaleAwareResponse | undefined, name: string, value: string | null | undefined): void {
+  if (!res || value == null) {
+    return;
+  }
+
+  if (typeof res.set === 'function') {
+    res.set(name, value);
+  } else if (typeof res.setHeader === 'function') {
+    res.setHeader(name, value);
+  }
+}
+
+function createLocaleMiddleware(options: LocaleDetectionOptions = {}) {
+  return (req: LocaleAwareRequest, res: LocaleAwareResponse, next: LocaleNextFunction) => {
+    const result = detectLocaleFromRequest(req, options);
+
+    if (req) {
+      req.locale = result.detected;
+      req.localeInfo = result;
+    }
+
+    setResponseHeader(res, 'X-Detected-Locale', result.detected);
+    setResponseHeader(res, 'X-Locale-Source', result.source || 'fallback');
+    if (result.appliedFallback) {
+      setResponseHeader(res, 'X-Locale-Fallback-Applied', 'true');
+    }
+
+    if (typeof next === 'function') {
+      next();
+    }
+  };
+}
+
 // Create and export singleton instance
 const cmscure = new CMSCureSDK();
 
@@ -1011,7 +1184,7 @@ const cmscure = new CMSCureSDK();
 export default cmscure;
 
 // Also export the class for advanced use cases
-export { CMSCureSDK };
+export { CMSCureSDK, detectLocaleFromRequest, createLocaleMiddleware };
 
 // For UMD builds
 declare global {

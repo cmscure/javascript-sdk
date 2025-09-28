@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK TypeScript Declarations
  * Official TypeScript definitions for CMSCure content management SDK
  * 
- * @version 1.4.0
+ * @version 1.4.1
  * @author CMSCure Team
  * @license MIT
  */
@@ -58,6 +58,43 @@ export interface CMSCureEventMap {
   imagesUpdated: CustomEvent<{ timestamp: number }>;
   contentUpdated: CustomEvent<{ reason: string; tab?: string; timestamp: number }>;
 }
+
+export interface LocaleDetectionOptions {
+  fallback?: string;
+  availableLanguages?: string[];
+}
+
+export type LocaleDetectionSource =
+  | 'sdk_parameter'
+  | 'x_locale_header'
+  | 'query_parameter'
+  | 'request_body'
+  | 'accept_language_header'
+  | 'fallback';
+
+export interface LocaleDetectionResult {
+  detected: string;
+  source: LocaleDetectionSource;
+  raw: string | null;
+  fallback: string;
+  available?: string[];
+  appliedFallback: boolean;
+}
+
+export interface LocaleAwareRequest {
+  headers?: Record<string, string | string[]>;
+  query?: Record<string, any>;
+  body?: Record<string, any>;
+  locale?: string;
+  localeInfo?: LocaleDetectionResult;
+}
+
+export interface LocaleAwareResponse {
+  set?(name: string, value: string): void;
+  setHeader?(name: string, value: string): void;
+}
+
+export type LocaleNextFunction = (err?: any) => void;
 
 // Main SDK class
 export declare class CMSCureSDK extends EventTarget {
@@ -206,6 +243,15 @@ export declare class CMSCureSDK extends EventTarget {
     options?: boolean | EventListenerOptions
   ): void;
 }
+
+export function detectLocaleFromRequest(
+  req?: LocaleAwareRequest,
+  options?: LocaleDetectionOptions
+): LocaleDetectionResult;
+
+export function createLocaleMiddleware(
+  options?: LocaleDetectionOptions
+): (req: LocaleAwareRequest, res: LocaleAwareResponse, next: LocaleNextFunction) => void;
 
 // Default SDK instance - singleton
 declare const cmscure: CMSCureSDK;

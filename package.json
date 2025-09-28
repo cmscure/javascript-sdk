@@ -1,6 +1,6 @@
 {
   "name": "@cmscure/javascript-sdk",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Official JavaScript SDK for CMSCure content management platform",
   "type": "module",
   "main": "dist/cmscure.esm.js",

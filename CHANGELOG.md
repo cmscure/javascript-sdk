@@ -1,4 +1,4 @@
-# [1.4.0](https://github.com/cmscure/javascript-sdk/compare/v1.3.2...v1.4.0) (2025-09-27)
+# [1.4.1](https://github.com/cmscure/javascript-sdk/compare/v1.3.2...v1.4.1) (2025-09-27)
 
 ### Added
 - **Declarative bindings:** new `resolve()` and `observe()` helpers remove the need for manual `contentUpdated` listeners; bind `homepage:hero_title`, `color:primary_color`, or `image:logo` and let the SDK push updates automatically.

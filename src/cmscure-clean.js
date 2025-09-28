@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.4.0
+ * @version 1.4.1
  * @author CMSCure Team
  * @license MIT
  */

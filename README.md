@@ -60,7 +60,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.0/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.1/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -72,7 +72,7 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.0/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.1/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
     <h1 data-cure="common:brand_name">[Brand Name]</h1>
@@ -329,6 +329,37 @@ Get the current language. Alias: `getCurrentLanguage()`.
 
 #### `getAvailableLanguages(): string[]`
 List the languages exposed by the project.
+
+### Backend Locale Utilities
+
+#### `detectLocaleFromRequest(req, options?)`
+Normalize incoming locale hints (query/body `language`, `X-Locale`, `locale/lang`, `Accept-Language`) and return the detected language plus metadata.
+
+```javascript
+import { detectLocaleFromRequest } from '@cmscure/javascript-sdk';
+
+app.get('/api/custom', (req, res) => {
+  const localeInfo = detectLocaleFromRequest(req, { availableLanguages: ['en', 'fr'] });
+  const copy = fetchLocalizedCopy(localeInfo.detected);
+  res.json({ locale: localeInfo.detected, copy });
+});
+```
+
+#### `createLocaleMiddleware(options?)`
+Express-style middleware that populates `req.locale` / `req.localeInfo` and sets helpful response headers for debugging.
+
+```javascript
+import express from 'express';
+import { createLocaleMiddleware } from '@cmscure/javascript-sdk';
+
+const app = express();
+app.use(express.json());
+app.use(createLocaleMiddleware({ availableLanguages: ['en', 'de'], fallback: 'en' }));
+
+app.get('/api/profile', (req, res) => {
+  res.json({ locale: req.locale, message: translate('profile_welcome', req.locale) });
+});
+```
 ## 🔄 Runtime Behaviour
 
 ### Automatic Language Resolution
