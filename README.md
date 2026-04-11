@@ -11,7 +11,7 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🔄 What's New in v1.4.2
+## 🔄 What's New in v1.4.4
 
 - **Smart rate limiting** – each resource (tab, images, colors, data store) is synced at most once every 2 seconds, eliminating duplicate API calls and **429 Too Many Requests** errors.
 - **90 % fewer requests on page load** – duplicate sync-on-cache-miss paths removed; a typical page now fires ~5 requests instead of ~60.
@@ -62,7 +62,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.2/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.4/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -74,7 +74,7 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.2/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.4/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
     <h1 data-cure="common:brand_name">[Brand Name]</h1>
