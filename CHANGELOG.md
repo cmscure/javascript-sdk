@@ -1,3 +1,23 @@
+# [1.4.2](https://github.com/cmscure/javascript-sdk/compare/v1.4.1...v1.4.2) (2025-11-13)
+
+### Fixed
+- **Rate Limiting Protection**: Added 2-second rate limiting to all sync operations (tabs, colors, images, data stores) to prevent hitting API rate limits (429 errors)
+- **Reduced API Calls**: Removed duplicate sync calls on cache misses - now only `ensure*Subscription()` methods trigger initial syncs
+- **Performance**: Significantly reduced unnecessary API requests during page load and real-time updates
+
+### Changed
+- `translation()`, `image()`, and `color()` methods no longer trigger sync on cache miss
+- All sync operations now check last sync time and skip if synced within 2 seconds (unless forced)
+- Added `#lastSyncTime` Map to track sync timestamps per resource
+- Added `#pendingSyncTimers` Map for future debouncing capabilities
+
+### Technical Details
+- Rate limiting applies to: `#syncTab()`, `#syncImages()`, `#syncColors()`, `#syncStore()`
+- Real-time updates with `force: true` option bypass rate limiting
+- Console logging added for rate-limited requests (development mode)
+
+---
+
 # [1.4.1](https://github.com/cmscure/javascript-sdk/compare/v1.3.2...v1.4.1) (2025-09-27)
 
 ### Added

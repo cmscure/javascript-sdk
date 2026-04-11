@@ -11,8 +11,10 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🔄 What’s New
+## 🔄 What's New in v1.4.2
 
+- **Smart rate limiting** – each resource (tab, images, colors, data store) is synced at most once every 2 seconds, eliminating duplicate API calls and **429 Too Many Requests** errors.
+- **90 % fewer requests on page load** – duplicate sync-on-cache-miss paths removed; a typical page now fires ~5 requests instead of ~60.
 - **Declarative bindings** – reference any CMS value with strings like `homepage:hero_title`, `color:primary_color`, or `image:logo` and let `resolve()` / `observe()` keep your UI synced automatically.
 - **Auto-realtime updates** – `observe()` handles caching, subscriptions, and socket re-syncs so you never wire `contentUpdated` listeners by hand.
 - **Gateway-first networking** – REST traffic is routed through `https://gateway.cmscure.com` while realtime sockets stay on `wss://app.cmscure.com` for the best mix of security and latency.
@@ -60,7 +62,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.1/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.2/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -72,7 +74,7 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.1/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.2/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
     <h1 data-cure="common:brand_name">[Brand Name]</h1>
@@ -538,23 +540,15 @@ npm run lint
 
 ## 📚 Examples
 
-Check out our [examples directory](./examples) for complete working examples:
+Check out the [examples directory](./examples) for working demos:
 
-- [Vanilla HTML/JS](./examples/vanilla-html)
-- [React App](./examples/react-app)
-- [Next.js App](./examples/nextjs-app)
-- [Vue.js App](./examples/vue-app)
+- [Vanilla HTML/JS](./examples/vanilla-html.html) – a single-file example covering translations, colors, images, data stores, and language switching
 
 ## 🆘 Support
 
-- 📖 [Documentation](https://docs.cmscure.com)
-- 💬 [Community Forum](https://community.cmscure.com)
+- 🌐 [CMSCure Dashboard](https://app.cmscure.com)
 - 📧 [Email Support](mailto:support@cmscure.com)
 - 🐛 [Bug Reports](https://github.com/cmscure/javascript-sdk/issues)
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📄 License
 

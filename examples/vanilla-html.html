@@ -3,207 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMSCure SDK - Vanilla HTML Example</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
+    <title>CMSCure SDK – Vanilla HTML Example</title>
+    <!-- Load the SDK from CDN (or use npm: import CMSCureSDK from '@cmscure/javascript-sdk') -->
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.2/dist/cmscure.umd.min.js"></script>
     <style>
         :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
+            --primary-color: #663BEB;
+            --secondary-color: #3B82F6;
         }
-        
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
             line-height: 1.6;
+            color: #1a1a1a;
+            background: #fafafa;
         }
-        
+
+        /* ── Hero ─────────────────────────────────── */
         .hero {
             text-align: center;
-            padding: 40px 0;
+            padding: 48px 24px;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 30px;
+            color: #fff;
+            border-radius: 12px;
+            margin-bottom: 32px;
         }
-        
+        .hero h1 { font-size: 2rem; margin-bottom: 8px; }
+        .hero p  { font-size: 1.1rem; opacity: .9; }
         .hero img {
             max-width: 100%;
-            height: 300px;
+            height: 260px;
             object-fit: cover;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-top: 20px;
         }
-        
-        .language-selector {
-            text-align: center;
-            margin: 20px 0;
+
+        /* ── Language selector ────────────────────── */
+        .language-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 24px 0;
         }
-        
-        .language-selector select {
-            padding: 10px;
-            border-radius: 5px;
+        .language-bar select {
+            padding: 8px 14px;
+            border-radius: 6px;
             border: 1px solid #ddd;
+            font-size: 0.95rem;
         }
-        
-        .products {
+
+        /* ── Data store grid ─────────────────────── */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 32px 0 16px;
+        }
+        .store-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
         }
-        
-        .product {
-            border: 1px solid #eee;
+        .store-card {
+            border: 1px solid #e5e5e5;
             padding: 20px;
             border-radius: 10px;
-            background: #f9f9f9;
+            background: #fff;
         }
-        
+        .store-card h3 { margin-bottom: 6px; }
+        .store-card p  { color: #555; font-size: 0.92rem; }
+
+        /* ── Footer ──────────────────────────────── */
         .footer {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 48px;
             padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #666;
+            border-top: 1px solid #e5e5e5;
+            color: #888;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1 data-cure-key="common:brand_name">[Loading Brand Name...]</h1>
-            <p data-cure-key="homepage:hero_subtitle">[Loading Subtitle...]</p>
-            <img data-cure-key="homepage:hero_image_url" src="https://placehold.co/600x300/EEE/666?text=Loading..." alt="Hero Image">
-        </div>
 
-        <div class="language-selector">
-            <label for="lang-select">Language:</label>
-            <select id="lang-select">
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
+    <!-- ── Hero section (translations + image + color) ─── -->
+    <div class="hero">
+        <h1 id="brand">[Loading Brand…]</h1>
+        <p  id="subtitle">[Loading Subtitle…]</p>
+        <img id="banner" src="https://placehold.co/600x260/EEE/999?text=Loading..." alt="Hero banner">
+    </div>
 
-        <div class="products">
-            <div class="product">
-                <h2 data-cure-key="products:product1_name">[Loading Product 1...]</h2>
-                <p data-cure-key="products:product1_desc">[Loading Description...]</p>
-            </div>
+    <!-- ── Language selector ─── -->
+    <div class="language-bar">
+        <label for="lang-select">🌍 Language:</label>
+        <select id="lang-select"></select>
+    </div>
 
-            <div class="product">
-                <h2 data-cure-key="products:product2_name">[Loading Product 2...]</h2>
-                <p data-cure-key="products:product2_desc">[Loading Description...]</p>
-            </div>
-        </div>
+    <!-- ── Data store items ─── -->
+    <h2 class="section-title" id="store-title">Products</h2>
+    <div class="store-grid" id="store-grid">
+        <p style="color:#999">Loading data store…</p>
+    </div>
 
-        <div class="footer">
-            <p data-cure-key="common:footer_text">[Loading Footer...]</p>
-        </div>
+    <!-- ── Footer ─── -->
+    <div class="footer">
+        <p id="footer-text">Powered by CMSCure</p>
     </div>
 
     <script>
-        // Initialize CMSCure SDK
+        // ─────────────────────────────────────────────
+        // 1. Create & configure
+        // ─────────────────────────────────────────────
         const cure = new CMSCureSDK();
-        const langSelector = document.getElementById('lang-select');
 
-        // Configure with your credentials
         cure.configure({
-            projectId: '19e40de54c99db47', // Replace with your project ID
-            apiKey: '73c05a3f162270e378285d8c2c37a95a4c93b9f9e92eb9c5b1dab5df1ffc4d04' // Replace with your API key
+            projectId:     'YOUR_PROJECT_ID',          // ← replace
+            apiKey:        'YOUR_API_KEY',              // ← replace
+            projectSecret: 'YOUR_PROJECT_SECRET',       // ← optional: enables real-time updates
+            defaultLanguage: 'en'
         });
 
-        // Update UI when content changes
-        cure.addEventListener('contentUpdated', updateUI);
-        cure.addEventListener('languageChanged', updateLanguageSelector);
+        // ─────────────────────────────────────────────
+        // 2. Observe translations (auto-sync + realtime)
+        // ─────────────────────────────────────────────
+        cure.observe('common:brand_name', value => {
+            document.getElementById('brand').textContent = value ?? '[common:brand_name]';
+        }, { defaultValue: '[common:brand_name]' });
 
-        function updateUI() {
-            console.log('UI UPDATE TRIGGERED. Current language:', cure.getLanguage());
+        cure.observe('homepage:hero_subtitle', value => {
+            document.getElementById('subtitle').textContent = value ?? '[homepage:hero_subtitle]';
+        }, { defaultValue: '[homepage:hero_subtitle]' });
 
-            document.querySelectorAll('[data-cure-key]').forEach(element => {
-                const keyParts = element.dataset.cureKey.split(':');
-                if (keyParts.length !== 2) return;
-                
-                const [tab, key] = keyParts;
-                let value;
+        cure.observe('common:footer_text', value => {
+            document.getElementById('footer-text').textContent = value ?? 'Powered by CMSCure';
+        }, { defaultValue: 'Powered by CMSCure' });
 
-                // Handle image elements differently from text elements
-                if (element.tagName === 'IMG') {
-                    // For images, check if it's a translation key ending with _url
-                    if (key.endsWith('_url')) {
-                        // This is a translation that contains an image URL
-                        value = cure.translation(key, tab);
-                        if (value) {
-                            element.src = value;
-                        }
-                    } else {
-                        // This is a direct image key
-                        value = cure.image(key);
-                        if (value) {
-                            element.src = value;
-                        }
-                    }
-                } else {
-                    value = cure.translation(key, tab);
-                    element.textContent = value;
-                }
-            });
-
-            // Update CSS custom properties with colors
-            updateColors();
-        }
-
-        function updateColors() {
-            const primaryColor = cure.color('primary_color');
-            const secondaryColor = cure.color('secondary_color');
-            
-            if (primaryColor) {
-                document.documentElement.style.setProperty('--primary-color', primaryColor);
+        // ─────────────────────────────────────────────
+        // 3. Observe an image
+        // ─────────────────────────────────────────────
+        cure.observe('image:deals_banner', value => {
+            const img = document.getElementById('banner');
+            if (typeof value === 'string' && value) {
+                img.src = value;
             }
-            if (secondaryColor) {
-                document.documentElement.style.setProperty('--secondary-color', secondaryColor);
+        }, { defaultValue: null });
+
+        // ─────────────────────────────────────────────
+        // 4. Observe colors → CSS custom properties
+        // ─────────────────────────────────────────────
+        cure.observe('color:primary_color', value => {
+            if (typeof value === 'string' && value) {
+                document.documentElement.style.setProperty('--primary-color', value);
             }
+        }, { defaultValue: '#663BEB' });
+
+        cure.observe('color:secondary_color', value => {
+            if (typeof value === 'string' && value) {
+                document.documentElement.style.setProperty('--secondary-color', value);
+            }
+        }, { defaultValue: '#3B82F6' });
+
+        // ─────────────────────────────────────────────
+        // 5. Observe a data store
+        // ─────────────────────────────────────────────
+        cure.observe('store:products', items => {
+            const grid = document.getElementById('store-grid');
+            if (!Array.isArray(items) || items.length === 0) {
+                grid.innerHTML = '<p style="color:#999">No products found.</p>';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <div class="store-card">
+                    <h3>${escapeHtml(item.name ?? item.title ?? 'Untitled')}</h3>
+                    <p>${escapeHtml(item.description ?? '')}</p>
+                </div>
+            `).join('');
+        }, { defaultValue: [] });
+
+        // ─────────────────────────────────────────────
+        // 6. Language selector (auto-populated)
+        // ─────────────────────────────────────────────
+        const langSelect = document.getElementById('lang-select');
+
+        const LANG_NAMES = {
+            en: 'English', fr: 'Français', es: 'Español',
+            de: 'Deutsch', it: 'Italiano', pt: 'Português',
+            ar: 'العربية', zh: '中文', ja: '日本語', ko: '한국어'
+        };
+
+        cure.observe('meta:languages', langs => {
+            const list = Array.isArray(langs) ? langs : ['en'];
+            const current = cure.getLanguage();
+            langSelect.innerHTML = list.map(code =>
+                `<option value="${code}" ${code === current ? 'selected' : ''}>${LANG_NAMES[code] || code.toUpperCase()}</option>`
+            ).join('');
+        }, { defaultValue: ['en'] });
+
+        langSelect.addEventListener('change', e => cure.setLanguage(e.target.value));
+
+        // ─────────────────────────────────────────────
+        // Helpers
+        // ─────────────────────────────────────────────
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
-
-        function updateLanguageSelector() {
-            const languages = cure.getAvailableLanguages();
-            const currentLang = cure.getLanguage();
-            
-            langSelector.innerHTML = '';
-            
-            const languageNames = { 
-                en: 'English', 
-                fr: 'Français', 
-                es: 'Español',
-                de: 'Deutsch',
-                it: 'Italiano',
-                pt: 'Português',
-                ru: 'Русский',
-                zh: '中文',
-                ja: '日本語',
-                ko: '한국어'
-            };
-            
-            languages.forEach(lang => {
-                const option = document.createElement('option');
-                option.value = lang;
-                option.textContent = languageNames[lang] || lang.toUpperCase();
-                if (lang === currentLang) {
-                    option.selected = true;
-                }
-                langSelector.appendChild(option);
-            });
-        }
-
-        // Language selector event
-        langSelector.addEventListener('change', (e) => {
-            cure.setLanguage(e.target.value);
-        });
-
-        // Initial UI update (for cached content)
-        updateUI();
     </script>
 </body>
 </html>

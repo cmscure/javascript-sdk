@@ -1,8 +1,8 @@
 /**
- * CMSCure JavaScript SDK v1.4.1
+ * CMSCure JavaScript SDK v1.4.2
  * Official SDK for CMSCure content management
  * 
- * Copyright (c) 2025 CMSCure
+ * Copyright (c) 2026 CMSCure
  * Licensed under MIT License
  * 
  * https://cmscure.com
@@ -4063,6 +4063,8 @@ class CMSCureSDK extends EventTarget {
   #autoLanguageResolved = false;
   #desiredDefaultLanguage = undefined;
   #bindingChannels = new Map();
+  #pendingSyncTimers = new Map(); // Debounce timers for syncs
+  #lastSyncTime = new Map(); // Track last sync time per resource
 
   constructor() {
     super();
@@ -4096,10 +4098,10 @@ class CMSCureSDK extends EventTarget {
     this.#handshakeAcknowledged = false;
 
     console.log('[CMSCureSDK] Configuration set.');
-    
+
     // Fire initial content update with cached data
     this.#emitContentUpdated({ reason: 'CachedDataLoaded' });
-    
+
     await this.#authenticateAndSync();
   }
 
@@ -4123,18 +4125,14 @@ class CMSCureSDK extends EventTarget {
   translation(key, tab, defaultValue) {
     this.#ensureTabSubscription(tab);
     const value = this.#cache?.[tab]?.[key]?.[this.#currentLanguage];
-    if (!value) {
-      void this.#syncTab(tab, { reason: 'CacheMiss' });
-    }
+    // Don't trigger sync on cache miss - ensureTabSubscription already handles it
     return value ?? defaultValue ?? `[${tab}:${key}]`;
   }
 
   image(key, defaultValue) {
     this.#ensureImagesSubscription();
     const url = this.#cache.__images__?.[key]?.url || null;
-    if (!url) {
-      void this.#syncImages({ reason: 'ImageCacheMiss' });
-    }
+    // Don't trigger sync on cache miss - ensureImagesSubscription already handles it
     return url ?? defaultValue ?? null;
   }
 
@@ -4142,9 +4140,7 @@ class CMSCureSDK extends EventTarget {
     this.#ensureColorsSubscription();
     const colorEntry = this.#cache.__colors__?.[key];
     const value = typeof colorEntry === 'string' ? colorEntry : colorEntry?.hex || colorEntry?.value || colorEntry?.color || null;
-    if (!value) {
-      void this.#syncColors({ reason: 'ColorCacheMiss' });
-    }
+    // Don't trigger sync on cache miss - ensureColorsSubscription already handles it
     return value ?? defaultValue ?? null;
   }
 
@@ -4172,32 +4168,32 @@ class CMSCureSDK extends EventTarget {
     const remainder = parts.slice(1).join(':');
 
     switch (prefix) {
-      case 'color':
-        return this.color(remainder, defaultValue ?? null);
-      case 'image':
-        return this.image(remainder, defaultValue ?? null);
-      case 'store': {
-        const fallback = Array.isArray(defaultValue) ? defaultValue : [];
-        return this.dataStore(remainder, fallback);
-      }
-      case 'meta':
-        switch (remainder) {
-          case 'language':
-          case 'current_language':
-            return this.getLanguage();
-          case 'languages':
-          case 'available_languages':
-            return this.getAvailableLanguages();
-          case 'auth_token':
-            return this.#authToken;
-          default:
-            return defaultValue ?? null;
-        }
+    case 'color':
+      return this.color(remainder, defaultValue ?? null);
+    case 'image':
+      return this.image(remainder, defaultValue ?? null);
+    case 'store': {
+      const fallback = Array.isArray(defaultValue) ? defaultValue : [];
+      return this.dataStore(remainder, fallback);
+    }
+    case 'meta':
+      switch (remainder) {
+      case 'language':
+      case 'current_language':
+        return this.getLanguage();
+      case 'languages':
+      case 'available_languages':
+        return this.getAvailableLanguages();
+      case 'auth_token':
+        return this.#authToken;
       default:
-        if (!remainder) {
-          return defaultValue ?? `[${prefix}:]`;
-        }
-        return this.translation(remainder, prefix, typeof defaultValue === 'string' ? defaultValue : undefined);
+        return defaultValue ?? null;
+      }
+    default:
+      if (!remainder) {
+        return defaultValue ?? `[${prefix}:]`;
+      }
+      return this.translation(remainder, prefix, typeof defaultValue === 'string' ? defaultValue : undefined);
     }
   }
 
@@ -4764,11 +4760,21 @@ class CMSCureSDK extends EventTarget {
       return;
     }
 
+    // Check if already syncing and not forcing
     if (this.#syncingTabs.has(tab) && !options.force) {
       return;
     }
 
+    // Rate limiting: don't sync the same tab more than once every 2 seconds unless forced
+    const lastSync = this.#lastSyncTime.get(`tab:${tab}`);
+    const now = Date.now();
+    if (lastSync && (now - lastSync) < 2000 && !options.force) {
+      console.log(`[CMSCureSDK] Rate limiting: skipping sync for tab "${tab}" (last synced ${now - lastSync}ms ago)`);
+      return;
+    }
+
     this.#syncingTabs.add(tab);
+    this.#lastSyncTime.set(`tab:${tab}`, now);
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/translations/${this.#config.projectId}/${tab}`, {
@@ -4815,7 +4821,17 @@ class CMSCureSDK extends EventTarget {
     if (this.#imagesSyncInFlight) {
       return;
     }
+
+    // Rate limiting: don't sync images more than once every 2 seconds unless forced
+    const lastSync = this.#lastSyncTime.get('images');
+    const now = Date.now();
+    if (lastSync && (now - lastSync) < 2000 && !options.force) {
+      console.log(`[CMSCureSDK] Rate limiting: skipping images sync (last synced ${now - lastSync}ms ago)`);
+      return;
+    }
+
     this.#imagesSyncInFlight = true;
+    this.#lastSyncTime.set('images', now);
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/images/${this.#config.projectId}`, {
@@ -4862,7 +4878,17 @@ class CMSCureSDK extends EventTarget {
     if (this.#colorsSyncInFlight) {
       return;
     }
+
+    // Rate limiting: don't sync colors more than once every 2 seconds unless forced
+    const lastSync = this.#lastSyncTime.get('colors');
+    const now = Date.now();
+    if (lastSync && (now - lastSync) < 2000 && !options.force) {
+      console.log(`[CMSCureSDK] Rate limiting: skipping colors sync (last synced ${now - lastSync}ms ago)`);
+      return;
+    }
+
     this.#colorsSyncInFlight = true;
+    this.#lastSyncTime.set('colors', now);
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/colors/${this.#config.projectId}`, {
@@ -4908,7 +4934,17 @@ class CMSCureSDK extends EventTarget {
     if (this.#syncingStores.has(apiIdentifier) && !options.force) {
       return;
     }
+
+    // Rate limiting: don't sync the same store more than once every 2 seconds unless forced
+    const lastSync = this.#lastSyncTime.get(`store:${apiIdentifier}`);
+    const now = Date.now();
+    if (lastSync && (now - lastSync) < 2000 && !options.force) {
+      console.log(`[CMSCureSDK] Rate limiting: skipping sync for store "${apiIdentifier}" (last synced ${now - lastSync}ms ago)`);
+      return;
+    }
+
     this.#syncingStores.add(apiIdentifier);
+    this.#lastSyncTime.set(`store:${apiIdentifier}`, now);
 
     try {
       const response = await fetch(`${this.#serverUrl}/api/sdk/store/${this.#config.projectId}/${apiIdentifier}`, {
@@ -4997,8 +5033,8 @@ function detectLocaleFromRequest(req = {}, options = {}) {
   const fallback = normalizeLocaleCode(options.fallback) || DEFAULT_LOCALE_FALLBACK;
   const availableLanguages = Array.isArray(options.availableLanguages)
     ? options.availableLanguages
-        .map(normalizeLocaleCode)
-        .filter(Boolean)
+      .map(normalizeLocaleCode)
+      .filter(Boolean)
     : undefined;
 
   const headers = prepareHeaderMap(req.headers);
