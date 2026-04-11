@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
  * CMSCure JavaScript SDK
  * Official SDK for integrating CMSCure content management into web applications
  * 
- * @version 1.4.6
+ * @version 1.4.7
  * @author CMSCure Team
  * @license MIT
  */

@@ -11,7 +11,7 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🔄 What's New in v1.4.6
+## 🔄 What's New in v1.4.7
 
 - **Smart rate limiting** – each resource (tab, images, colors, data store) is synced at most once every 2 seconds, eliminating duplicate API calls and **429 Too Many Requests** errors.
 - **90 % fewer requests on page load** – duplicate sync-on-cache-miss paths removed; a typical page now fires ~5 requests instead of ~60.
@@ -62,7 +62,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.6/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.7/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🛠️ Create Content in the CMSCure Dashboard
@@ -92,7 +92,7 @@ Before running the examples, create a project in your [CMSCure Dashboard](https:
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.6/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.7/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
     <h1 id="title">Welcome</h1>
@@ -182,6 +182,13 @@ const App = () => {
     return () => unsubs.forEach(fn => fn());
   }, [sdk]);
 
+  // Helper: resolve a data-store field (handles plain values & localized objects)
+  const field = (item, key) => {
+    const v = item?.data?.[key];
+    if (v == null || typeof v !== 'object') return v ?? null;
+    return v[sdk.getLanguage()] ?? v.en ?? Object.values(v)[0] ?? null;
+  };
+
   return (
     <section>
       {heroBanner && <img src={heroBanner} alt="Hero" />}
@@ -191,9 +198,9 @@ const App = () => {
 
       {products.map((p, i) => (
         <div key={i}>
-          {p.image_url && <img src={p.image_url} alt={p.title} width={56} />}
-          <h3>{p.title}</h3>
-          <span>${p.price?.toFixed(2)}</span>
+          {field(p, 'image_url') && <img src={field(p, 'image_url')} alt={field(p, 'title')} width={56} />}
+          <h3>{field(p, 'title')}</h3>
+          <span>${typeof field(p, 'price') === 'number' ? field(p, 'price').toFixed(2) : field(p, 'price')}</span>
         </div>
       ))}
     </section>
@@ -214,9 +221,9 @@ export default App;
     <button :style="{ backgroundColor: accentColor }">{{ ctaLabel }}</button>
 
     <div v-for="(product, i) in products" :key="i">
-      <img v-if="product.image_url" :src="product.image_url" :alt="product.title" width="56" />
-      <h3>{{ product.title }}</h3>
-      <span>${{ product.price?.toFixed(2) }}</span>
+      <img v-if="field(product, 'image_url')" :src="field(product, 'image_url')" :alt="field(product, 'title')" width="56" />
+      <h3>{{ field(product, 'title') }}</h3>
+      <span>${{ field(product, 'price') }}</span>
     </div>
 
     <select v-model="language" @change="changeLanguage">
@@ -270,6 +277,12 @@ export default {
   methods: {
     changeLanguage() {
       cure.setLanguage(this.language);
+    },
+    // Resolve a data-store field (handles plain values & localized objects)
+    field(item, key) {
+      const v = item?.data?.[key];
+      if (v == null || typeof v !== 'object') return v ?? null;
+      return v[cure.getLanguage()] ?? v.en ?? Object.values(v)[0] ?? null;
     }
   }
 };
@@ -321,6 +334,18 @@ Get data store items by API identifier. Stores are cached and resynced when upda
 
 ```javascript
 const products = cure.dataStore('feature_products', []);
+```
+
+Each item has an `_id`, `data` (field values), `createdAt`, `updatedAt`, and optional `ctaUrl`. Field values inside `data` can be plain types (string, number, boolean) or localized objects (`{ en: "…", ar: "…" }`). Use a helper to resolve them:
+
+```javascript
+function field(item, key) {
+    const v = item?.data?.[key];
+    if (v == null || typeof v !== 'object') return v ?? null;
+    return v[cure.getLanguage()] ?? v.en ?? Object.values(v)[0] ?? null;
+}
+
+const title = field(products[0], 'title');
 ```
 
 #### `resolve(reference: string, defaultValue?: any): any`

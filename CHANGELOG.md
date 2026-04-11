@@ -1,3 +1,9 @@
+## [1.4.7](https://github.com/cmscure/javascript-sdk/compare/v1.4.6...v1.4.7) (2026-04-11)
+
+* **fix:** Data store items now correctly read fields from `item.data` instead of top-level properties
+* **docs:** Added `field()` helper for resolving plain and localized data store values
+* **docs:** Updated React, Vue, and vanilla HTML examples with correct data store field access
+
 ## [1.4.6](https://github.com/cmscure/javascript-sdk/compare/v1.4.1...v1.4.6) (2026-04-11)
 
 

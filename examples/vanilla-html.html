@@ -9,7 +9,7 @@
         1. Create the content listed in README.md → Quick Start → Step 2
         2. Replace YOUR_PROJECT_ID, YOUR_API_KEY, YOUR_PROJECT_SECRET below
     -->
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.6/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.7/dist/cmscure.umd.min.js"></script>
     <style>
         :root {
             --primary-color: #3B82F6;
@@ -240,6 +240,15 @@
         // RTL language codes
         const RTL_CODES = new Set(['ar', 'he', 'fa', 'ur']);
 
+        // Data-store field resolver — handles plain values AND localized objects
+        function field(item, key) {
+            const val = item?.data?.[key];
+            if (val == null) return null;
+            if (typeof val !== 'object') return val;          // string / number / bool
+            const lang = cure.getLanguage();                  // localized: {en:"…", ar:"…"}
+            return val[lang] ?? val['en'] ?? Object.values(val)[0] ?? null;
+        }
+
         async function main() {
             await cure.configure({
                 projectId:     'YOUR_PROJECT_ID',       // ← replace
@@ -319,10 +328,13 @@
                 }
 
                 list.innerHTML = items.map(item => {
-                    const title    = esc(item.title ?? '—');
-                    const price    = typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '';
-                    const imageUrl = item.image_url ?? '';
-                    const ctaUrl   = item.cta_url ?? '';
+                    const title    = esc(field(item, 'title') ?? '—');
+                    const rawPrice = field(item, 'price');
+                    const price    = typeof rawPrice === 'number'
+                        ? `$${rawPrice.toFixed(2)}`
+                        : (rawPrice ? `$${rawPrice}` : '');
+                    const imageUrl = field(item, 'image_url') ?? '';
+                    const ctaUrl   = field(item, 'cta_url') ?? item.ctaUrl ?? '';
 
                     return `
                         <div class="product-card">
