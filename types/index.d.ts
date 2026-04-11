@@ -2,7 +2,7 @@
  * CMSCure JavaScript SDK TypeScript Declarations
  * Official TypeScript definitions for CMSCure content management SDK
  * 
- * @version 1.4.5
+ * @version 1.4.6
  * @author CMSCure Team
  * @license MIT
  */

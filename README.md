@@ -11,7 +11,7 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🔄 What's New in v1.4.5
+## 🔄 What's New in v1.4.6
 
 - **Smart rate limiting** – each resource (tab, images, colors, data store) is synced at most once every 2 seconds, eliminating duplicate API calls and **429 Too Many Requests** errors.
 - **90 % fewer requests on page load** – duplicate sync-on-cache-miss paths removed; a typical page now fires ~5 requests instead of ~60.
@@ -62,8 +62,26 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.5/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.6/dist/cmscure.umd.min.js"></script>
 ```
+
+## 🛠️ Create Content in the CMSCure Dashboard
+
+Before running the examples, create a project in your [CMSCure Dashboard](https://app.cmscure.com) and add the following content. These keys and values are used by the [vanilla HTML example](./examples/vanilla-html.html) and the code snippets in this README, so adding them lets you run everything immediately:
+
+| Type | Screen / Store | Key | Sample Value |
+|------|---------------|-----|-------------|
+| Translation | `home_screen` | `welcome_title` | Welcome! |
+| Translation | `home_screen` | `welcome_subtitle` | Manage content, your way. |
+| Translation | `home_screen` | `cta_button` | Get Started |
+| Color | — | `primary_color` | #3B82F6 |
+| Color | — | `accent_color` | #F97316 |
+| Color | — | `background_color` | #F3F4F6 |
+| Image | — | `app_logo` | *(upload your logo)* |
+| Image | — | `hero_banner` | *(upload a banner)* |
+| Data Store | `feature_products` | — | Store Name: **Feature Products**, Fields: `title` (String), `price` (Number), `image_url` (String) |
+
+> **Replace** `YOUR_PROJECT_ID`, `YOUR_API_KEY`, and `YOUR_PROJECT_SECRET` in the examples with the credentials from your dashboard.
 
 ## 🏃‍♂️ Quick Start
 
@@ -74,7 +92,7 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.5/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.6/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
     <h1 id="title">Welcome</h1>

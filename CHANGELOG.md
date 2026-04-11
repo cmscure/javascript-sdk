@@ -1,3 +1,7 @@
+## [1.4.6](https://github.com/cmscure/javascript-sdk/compare/v1.4.1...v1.4.6) (2026-04-11)
+
+
+
 ## [1.4.3](https://github.com/cmscure/javascript-sdk/compare/v1.4.1...v1.4.3) (2026-04-11)
 
 
