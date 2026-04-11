@@ -4,115 +4,219 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CMSCure SDK – Vanilla HTML Example</title>
-    <!-- Load the SDK from CDN (or use npm: import CMSCureSDK from '@cmscure/javascript-sdk') -->
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.4/dist/cmscure.umd.min.js"></script>
+    <!--
+        BEFORE RUNNING:
+        1. Create the content listed in README.md → Quick Start → Step 2
+        2. Replace YOUR_PROJECT_ID, YOUR_API_KEY, YOUR_PROJECT_SECRET below
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.5/dist/cmscure.umd.min.js"></script>
     <style>
         :root {
-            --primary-color: #663BEB;
-            --secondary-color: #3B82F6;
+            --primary-color: #3B82F6;
+            --accent-color: #F97316;
+            --background-color: #F3F4F6;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 900px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 24px;
             line-height: 1.6;
             color: #1a1a1a;
-            background: #fafafa;
+            background: var(--background-color);
         }
 
         /* ── Hero ─────────────────────────────────── */
         .hero {
-            text-align: center;
-            padding: 48px 24px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: #fff;
-            border-radius: 12px;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
             margin-bottom: 32px;
         }
-        .hero h1 { font-size: 2rem; margin-bottom: 8px; }
-        .hero p  { font-size: 1.1rem; opacity: .9; }
-        .hero img {
-            max-width: 100%;
-            height: 260px;
+        .hero-banner {
+            width: 100%;
+            height: 200px;
             object-fit: cover;
-            border-radius: 8px;
-            margin-top: 20px;
+            display: block;
+            background: #e5e7eb;
         }
+        .hero-body {
+            padding: 24px;
+        }
+        .hero-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            object-fit: contain;
+            margin-bottom: 12px;
+            background: #e5e7eb;
+        }
+        .hero h1 {
+            font-size: 1.75rem;
+            margin-bottom: 6px;
+            color: var(--primary-color);
+        }
+        .hero p {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .cta-button:hover { opacity: 0.85; }
 
-        /* ── Language selector ────────────────────── */
-        .language-bar {
+        /* ── Products (data store) ────────────────── */
+        .section-header {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 32px 0 14px;
+            color: var(--primary-color);
+        }
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .product-card {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 24px 0;
+            gap: 14px;
+            padding: 14px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .language-bar select {
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
+        .product-card img {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #e5e7eb;
+            flex-shrink: 0;
+        }
+        .product-info { flex: 1; min-width: 0; }
+        .product-info h3 {
             font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .product-info .price {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        .product-cta {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent-color);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .empty-state {
+            text-align: center;
+            color: #9ca3af;
+            padding: 24px;
+            background: #fff;
+            border-radius: 12px;
         }
 
-        /* ── Data store grid ─────────────────────── */
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 32px 0 16px;
+        /* ── Language picker ──────────────────────── */
+        .language-section {
+            margin-top: 32px;
         }
-        .store-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
+        .lang-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
         }
-        .store-card {
-            border: 1px solid #e5e5e5;
-            padding: 20px;
+        .lang-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        .direction-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+        .direction-badge.ltr { background: #DBEAFE; color: #2563EB; }
+        .direction-badge.rtl { background: #FFEDD5; color: #EA580C; }
+        .lang-select {
+            width: 100%;
+            padding: 12px 14px;
             border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 0.95rem;
             background: #fff;
+            cursor: pointer;
         }
-        .store-card h3 { margin-bottom: 6px; }
-        .store-card p  { color: #555; font-size: 0.92rem; }
 
         /* ── Footer ──────────────────────────────── */
         .footer {
             text-align: center;
             margin-top: 48px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e5e5;
-            color: #888;
-            font-size: 0.9rem;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 0.82rem;
         }
+        .footer a { color: var(--primary-color); text-decoration: none; }
     </style>
 </head>
 <body>
 
-    <!-- ── Hero section (translations + image + color) ─── -->
+    <!-- ── Hero section ────────────────────────── -->
     <div class="hero">
-        <h1 id="brand">[Loading Brand…]</h1>
-        <p  id="subtitle">[Loading Subtitle…]</p>
-        <img id="banner" src="https://placehold.co/600x260/EEE/999?text=Loading..." alt="Hero banner">
+        <img id="hero-banner" class="hero-banner" src="" alt="Hero banner">
+        <div class="hero-body">
+            <img id="app-logo" class="hero-logo" src="" alt="App logo">
+            <h1 id="welcome-title">Welcome</h1>
+            <p  id="welcome-subtitle">Loading…</p>
+            <button class="cta-button" id="cta-button">Get Started</button>
+        </div>
     </div>
 
-    <!-- ── Language selector ─── -->
-    <div class="language-bar">
-        <label for="lang-select">🌍 Language:</label>
-        <select id="lang-select"></select>
+    <!-- ── Feature Products (data store) ───────── -->
+    <h2 class="section-header">Feature Products</h2>
+    <div class="product-list" id="product-list">
+        <div class="empty-state">Loading products…</div>
     </div>
 
-    <!-- ── Data store items ─── -->
-    <h2 class="section-title" id="store-title">Products</h2>
-    <div class="store-grid" id="store-grid">
-        <p style="color:#999">Loading data store…</p>
+    <!-- ── Language picker ─────────────────────── -->
+    <div class="language-section">
+        <div class="lang-header">
+            <h2>Language</h2>
+            <span class="direction-badge ltr" id="dir-badge">LTR</span>
+        </div>
+        <select class="lang-select" id="lang-select"></select>
     </div>
 
-    <!-- ── Footer ─── -->
+    <!-- ── Footer ──────────────────────────────── -->
     <div class="footer">
-        <p id="footer-text">Powered by CMSCure</p>
+        Manage this content from your <a href="https://app.cmscure.com" target="_blank">CMSCure Dashboard</a>
     </div>
 
     <script>
@@ -121,99 +225,160 @@
         // ─────────────────────────────────────────────
         const cure = new CMSCureSDK();
 
-        cure.configure({
-            projectId:     'YOUR_PROJECT_ID',          // ← replace
-            apiKey:        'YOUR_API_KEY',              // ← replace
-            projectSecret: 'YOUR_PROJECT_SECRET',       // ← optional: enables real-time updates
-            defaultLanguage: 'en'
-        });
-
-        // ─────────────────────────────────────────────
-        // 2. Observe translations (auto-sync + realtime)
-        // ─────────────────────────────────────────────
-        cure.observe('common:brand_name', value => {
-            document.getElementById('brand').textContent = value ?? '[common:brand_name]';
-        }, { defaultValue: '[common:brand_name]' });
-
-        cure.observe('homepage:hero_subtitle', value => {
-            document.getElementById('subtitle').textContent = value ?? '[homepage:hero_subtitle]';
-        }, { defaultValue: '[homepage:hero_subtitle]' });
-
-        cure.observe('common:footer_text', value => {
-            document.getElementById('footer-text').textContent = value ?? 'Powered by CMSCure';
-        }, { defaultValue: 'Powered by CMSCure' });
-
-        // ─────────────────────────────────────────────
-        // 3. Observe an image
-        // ─────────────────────────────────────────────
-        cure.observe('image:deals_banner', value => {
-            const img = document.getElementById('banner');
-            if (typeof value === 'string' && value) {
-                img.src = value;
-            }
-        }, { defaultValue: null });
-
-        // ─────────────────────────────────────────────
-        // 4. Observe colors → CSS custom properties
-        // ─────────────────────────────────────────────
-        cure.observe('color:primary_color', value => {
-            if (typeof value === 'string' && value) {
-                document.documentElement.style.setProperty('--primary-color', value);
-            }
-        }, { defaultValue: '#663BEB' });
-
-        cure.observe('color:secondary_color', value => {
-            if (typeof value === 'string' && value) {
-                document.documentElement.style.setProperty('--secondary-color', value);
-            }
-        }, { defaultValue: '#3B82F6' });
-
-        // ─────────────────────────────────────────────
-        // 5. Observe a data store
-        // ─────────────────────────────────────────────
-        cure.observe('store:products', items => {
-            const grid = document.getElementById('store-grid');
-            if (!Array.isArray(items) || items.length === 0) {
-                grid.innerHTML = '<p style="color:#999">No products found.</p>';
-                return;
-            }
-
-            grid.innerHTML = items.map(item => `
-                <div class="store-card">
-                    <h3>${escapeHtml(item.name ?? item.title ?? 'Untitled')}</h3>
-                    <p>${escapeHtml(item.description ?? '')}</p>
-                </div>
-            `).join('');
-        }, { defaultValue: [] });
-
-        // ─────────────────────────────────────────────
-        // 6. Language selector (auto-populated)
-        // ─────────────────────────────────────────────
-        const langSelect = document.getElementById('lang-select');
-
-        const LANG_NAMES = {
-            en: 'English', fr: 'Français', es: 'Español',
-            de: 'Deutsch', it: 'Italiano', pt: 'Português',
-            ar: 'العربية', zh: '中文', ja: '日本語', ko: '한국어'
+        // Flag / display-name helpers (mirrors CureLanguageDisplay in the iOS SDK)
+        const FLAGS = {
+            en: '🇺🇸', fr: '🇫🇷', es: '🇪🇸', de: '🇩🇪', it: '🇮🇹',
+            pt: '🇵🇹', ar: '🇸🇦', zh: '🇨🇳', ja: '🇯🇵', ko: '🇰🇷',
+            ru: '🇷🇺', hi: '🇮🇳', tr: '🇹🇷', nl: '🇳🇱', sv: '🇸🇪'
         };
+        const NAMES = {
+            en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch',
+            it: 'Italiano', pt: 'Português', ar: 'العربية', zh: '中文',
+            ja: '日本語', ko: '한국어', ru: 'Русский', hi: 'हिन्दी',
+            tr: 'Türkçe', nl: 'Nederlands', sv: 'Svenska'
+        };
+        // RTL language codes
+        const RTL_CODES = new Set(['ar', 'he', 'fa', 'ur']);
 
-        cure.observe('meta:languages', langs => {
-            const list = Array.isArray(langs) ? langs : ['en'];
-            const current = cure.getLanguage();
-            langSelect.innerHTML = list.map(code =>
-                `<option value="${code}" ${code === current ? 'selected' : ''}>${LANG_NAMES[code] || code.toUpperCase()}</option>`
-            ).join('');
-        }, { defaultValue: ['en'] });
+        async function main() {
+            await cure.configure({
+                projectId:     'YOUR_PROJECT_ID',       // ← replace
+                apiKey:        'YOUR_API_KEY',           // ← replace
+                projectSecret: 'YOUR_PROJECT_SECRET',    // ← optional: enables real-time updates
+                defaultLanguage: 'en'
+            });
 
-        langSelect.addEventListener('change', e => cure.setLanguage(e.target.value));
+            // ─────────────────────────────────────────
+            // 2. Translations (home_screen tab)
+            // ─────────────────────────────────────────
+            cure.observe('home_screen:welcome_title', value => {
+                document.getElementById('welcome-title').textContent = value || 'Welcome';
+            }, { defaultValue: 'Welcome' });
+
+            cure.observe('home_screen:welcome_subtitle', value => {
+                document.getElementById('welcome-subtitle').textContent = value || '';
+            }, { defaultValue: '' });
+
+            cure.observe('home_screen:cta_button', value => {
+                document.getElementById('cta-button').textContent = value || 'Get Started';
+            }, { defaultValue: 'Get Started' });
+
+            // ─────────────────────────────────────────
+            // 3. Images
+            // ─────────────────────────────────────────
+            cure.observe('image:hero_banner', value => {
+                const img = document.getElementById('hero-banner');
+                if (typeof value === 'string' && value) {
+                    img.src = value;
+                    img.style.display = '';
+                } else {
+                    img.style.display = 'none';
+                }
+            }, { defaultValue: null });
+
+            cure.observe('image:app_logo', value => {
+                const img = document.getElementById('app-logo');
+                if (typeof value === 'string' && value) {
+                    img.src = value;
+                    img.style.display = '';
+                } else {
+                    img.style.display = 'none';
+                }
+            }, { defaultValue: null });
+
+            // ─────────────────────────────────────────
+            // 4. Colors → CSS custom properties
+            // ─────────────────────────────────────────
+            cure.observe('color:primary_color', value => {
+                if (typeof value === 'string' && value) {
+                    document.documentElement.style.setProperty('--primary-color', value);
+                }
+            }, { defaultValue: '#3B82F6' });
+
+            cure.observe('color:accent_color', value => {
+                if (typeof value === 'string' && value) {
+                    document.documentElement.style.setProperty('--accent-color', value);
+                }
+            }, { defaultValue: '#F97316' });
+
+            cure.observe('color:background_color', value => {
+                if (typeof value === 'string' && value) {
+                    document.documentElement.style.setProperty('--background-color', value);
+                }
+            }, { defaultValue: '#F3F4F6' });
+
+            // ─────────────────────────────────────────
+            // 5. Data store – feature_products
+            // ─────────────────────────────────────────
+            cure.observe('store:feature_products', items => {
+                const list = document.getElementById('product-list');
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    list.innerHTML = '<div class="empty-state">No products available</div>';
+                    return;
+                }
+
+                list.innerHTML = items.map(item => {
+                    const title    = esc(item.title ?? '—');
+                    const price    = typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '';
+                    const imageUrl = item.image_url ?? '';
+                    const ctaUrl   = item.cta_url ?? '';
+
+                    return `
+                        <div class="product-card">
+                            ${imageUrl
+                                ? `<img src="${esc(imageUrl)}" alt="${title}">`
+                                : `<div style="width:56px;height:56px;border-radius:8px;background:#e5e7eb"></div>`}
+                            <div class="product-info">
+                                <h3>${title}</h3>
+                                ${price ? `<span class="price">${price}</span>` : ''}
+                            </div>
+                            ${ctaUrl
+                                ? `<a class="product-cta" href="${esc(ctaUrl)}" target="_blank" rel="noopener">View</a>`
+                                : ''}
+                        </div>`;
+                }).join('');
+            }, { defaultValue: [] });
+
+            // ─────────────────────────────────────────
+            // 6. Language picker (auto-populated)
+            // ─────────────────────────────────────────
+            const langSelect = document.getElementById('lang-select');
+            const dirBadge   = document.getElementById('dir-badge');
+
+            function updateDirectionBadge(langCode) {
+                const isRTL = RTL_CODES.has(langCode);
+                dirBadge.textContent = isRTL ? 'RTL' : 'LTR';
+                dirBadge.className   = `direction-badge ${isRTL ? 'rtl' : 'ltr'}`;
+                document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+            }
+
+            cure.observe('meta:languages', langs => {
+                const list    = Array.isArray(langs) ? langs : ['en'];
+                const current = cure.getLanguage();
+                langSelect.innerHTML = list.map(code => {
+                    const flag = FLAGS[code] || '🏳️';
+                    const name = NAMES[code] || code.toUpperCase();
+                    return `<option value="${code}" ${code === current ? 'selected' : ''}>${flag}  ${name}</option>`;
+                }).join('');
+                updateDirectionBadge(current);
+            }, { defaultValue: ['en'] });
+
+            langSelect.addEventListener('change', e => {
+                cure.setLanguage(e.target.value);
+                updateDirectionBadge(e.target.value);
+            });
+        }
+
+        main();
 
         // ─────────────────────────────────────────────
-        // Helpers
+        // Minimal HTML-escape helper
         // ─────────────────────────────────────────────
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
         }
     </script>
 </body>

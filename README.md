@@ -11,11 +11,11 @@ The official CMSCure JavaScript SDK for web applications. Easily integrate dynam
 
 **🚀 Get Started**: Create your free account at [app.cmscure.com](https://app.cmscure.com) and manage all your content from the powerful CMSCure Dashboard.
 
-## 🔄 What's New in v1.4.4
+## 🔄 What's New in v1.4.5
 
 - **Smart rate limiting** – each resource (tab, images, colors, data store) is synced at most once every 2 seconds, eliminating duplicate API calls and **429 Too Many Requests** errors.
 - **90 % fewer requests on page load** – duplicate sync-on-cache-miss paths removed; a typical page now fires ~5 requests instead of ~60.
-- **Declarative bindings** – reference any CMS value with strings like `homepage:hero_title`, `color:primary_color`, or `image:logo` and let `resolve()` / `observe()` keep your UI synced automatically.
+- **Declarative bindings** – reference any CMS value with strings like `home_screen:welcome_title`, `color:primary_color`, or `image:hero_banner` and let `resolve()` / `observe()` keep your UI synced automatically.
 - **Auto-realtime updates** – `observe()` handles caching, subscriptions, and socket re-syncs so you never wire `contentUpdated` listeners by hand.
 - **Gateway-first networking** – REST traffic is routed through `https://gateway.cmscure.com` while realtime sockets stay on `wss://app.cmscure.com` for the best mix of security and latency.
 - **Immutable configuration** – project ID, API key, and optional project secret are all you configure; endpoints are locked for consistency and safety.
@@ -62,7 +62,7 @@ yarn add @cmscure/javascript-sdk
 <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@latest/dist/cmscure.umd.min.js"></script>
 
 <!-- Specific version (recommended) -->
-<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.4/dist/cmscure.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.5/dist/cmscure.umd.min.js"></script>
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -74,13 +74,13 @@ yarn add @cmscure/javascript-sdk
 <html>
 <head>
     <title>My App with CMSCure</title>
-    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.4/dist/cmscure.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cmscure/javascript-sdk@1.4.5/dist/cmscure.umd.min.js"></script>
 </head>
 <body>
-    <h1 data-cure="common:brand_name">[Brand Name]</h1>
-    <p data-cure="homepage:hero_subtitle">[Hero Subtitle]</p>
-    <button data-cure-color="secondary_button">Call To Action</button>
-    <img data-cure-image="deals_banner" src="placeholder.jpg" alt="Deals Banner">
+    <h1 id="title">Welcome</h1>
+    <p id="subtitle"></p>
+    <img id="hero-banner" src="" alt="Hero">
+    <button id="cta">Get Started</button>
 
     <script>
         const cure = new CMSCureSDK();
@@ -89,37 +89,38 @@ yarn add @cmscure/javascript-sdk
             await cure.configure({
                 projectId: 'your-project-id',
                 apiKey: 'your-api-key',
-                projectSecret: 'optional-project-secret'
+                projectSecret: 'your-project-secret' // optional: enables real-time
             });
 
-            const brand = document.querySelector('[data-cure="common:brand_name"]');
-            const subtitle = document.querySelector('[data-cure="homepage:hero_subtitle"]');
-            const cta = document.querySelector('[data-cure-color="secondary_button"]');
-            const banner = document.querySelector('[data-cure-image="deals_banner"]');
+            // Translations (home_screen tab)
+            cure.observe('home_screen:welcome_title', value => {
+                document.getElementById('title').textContent = value || 'Welcome';
+            }, { defaultValue: 'Welcome' });
 
-            cure.observe('common:brand_name', value => {
-                if (brand) {
-                    brand.textContent = value ?? '[common:brand_name]';
-                }
-            }, { defaultValue: '[common:brand_name]' });
+            cure.observe('home_screen:welcome_subtitle', value => {
+                document.getElementById('subtitle').textContent = value || '';
+            });
 
-            cure.observe('homepage:hero_subtitle', value => {
-                if (subtitle) {
-                    subtitle.textContent = value ?? '[homepage:hero_subtitle]';
-                }
-            }, { defaultValue: '[homepage:hero_subtitle]' });
+            cure.observe('home_screen:cta_button', value => {
+                document.getElementById('cta').textContent = value || 'Get Started';
+            }, { defaultValue: 'Get Started' });
 
-            cure.observe('color:secondary_button', value => {
-                if (cta && typeof value === 'string') {
-                    cta.style.backgroundColor = value;
+            // Images
+            cure.observe('image:hero_banner', value => {
+                if (typeof value === 'string' && value) {
+                    document.getElementById('hero-banner').src = value;
                 }
-            }, { defaultValue: '#663BEB' });
+            });
 
-            cure.observe('image:deals_banner', value => {
-                if (banner && typeof value === 'string') {
-                    banner.src = value;
-                }
-            }, { defaultValue: null });
+            // Colors → CSS custom properties
+            cure.observe('color:primary_color', value => {
+                if (value) document.documentElement.style.setProperty('--primary', value);
+            });
+
+            // Data store
+            cure.observe('store:feature_products', items => {
+                console.log('Products:', items);
+            });
         }
 
         main();
@@ -136,10 +137,12 @@ import { CMSCureSDK } from '@cmscure/javascript-sdk';
 
 const App = () => {
   const sdk = useMemo(() => new CMSCureSDK(), []);
-  const [heroTitle, setHeroTitle] = useState('[homepage:hero_title]');
-  const [heroSubtitle, setHeroSubtitle] = useState('[homepage:hero_subtitle]');
-  const [heroImage, setHeroImage] = useState<string | null>(null);
-  const [buttonColor, setButtonColor] = useState('#663BEB');
+  const [title, setTitle] = useState('Welcome');
+  const [subtitle, setSubtitle] = useState('');
+  const [ctaLabel, setCtaLabel] = useState('Get Started');
+  const [heroBanner, setHeroBanner] = useState(null);
+  const [accentColor, setAccentColor] = useState('#F97316');
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     void sdk.configure({
@@ -149,36 +152,32 @@ const App = () => {
       defaultLanguage: 'en'
     });
 
-    const unsubscribeTitle = sdk.observe('homepage:hero_title', value => {
-      setHeroTitle(typeof value === 'string' && value ? value : '[homepage:hero_title]');
-    }, { defaultValue: '[homepage:hero_title]' });
+    const unsubs = [
+      sdk.observe('home_screen:welcome_title', v => setTitle(v || 'Welcome'), { defaultValue: 'Welcome' }),
+      sdk.observe('home_screen:welcome_subtitle', v => setSubtitle(v || '')),
+      sdk.observe('home_screen:cta_button', v => setCtaLabel(v || 'Get Started'), { defaultValue: 'Get Started' }),
+      sdk.observe('image:hero_banner', v => setHeroBanner(typeof v === 'string' ? v : null)),
+      sdk.observe('color:accent_color', v => setAccentColor(typeof v === 'string' ? v : '#F97316')),
+      sdk.observe('store:feature_products', v => setProducts(Array.isArray(v) ? v : []))
+    ];
 
-    const unsubscribeSubtitle = sdk.observe('homepage:hero_subtitle', value => {
-      setHeroSubtitle(typeof value === 'string' && value ? value : '[homepage:hero_subtitle]');
-    }, { defaultValue: '[homepage:hero_subtitle]' });
-
-    const unsubscribeImage = sdk.observe('image:deals_banner', value => {
-      setHeroImage(typeof value === 'string' && value ? value : null);
-    }, { defaultValue: null });
-
-    const unsubscribeColor = sdk.observe('color:secondary_button', value => {
-      setButtonColor(typeof value === 'string' && value ? value : '#663BEB');
-    }, { defaultValue: '#663BEB' });
-
-    return () => {
-      unsubscribeTitle();
-      unsubscribeSubtitle();
-      unsubscribeImage();
-      unsubscribeColor();
-    };
+    return () => unsubs.forEach(fn => fn());
   }, [sdk]);
 
   return (
     <section>
-      <h1>{heroTitle}</h1>
-      <p>{heroSubtitle}</p>
-      {heroImage && <img src={heroImage} alt="Deals" />}
-      <button style={{ backgroundColor: buttonColor }}>Learn more</button>
+      {heroBanner && <img src={heroBanner} alt="Hero" />}
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+      <button style={{ backgroundColor: accentColor }}>{ctaLabel}</button>
+
+      {products.map((p, i) => (
+        <div key={i}>
+          {p.image_url && <img src={p.image_url} alt={p.title} width={56} />}
+          <h3>{p.title}</h3>
+          <span>${p.price?.toFixed(2)}</span>
+        </div>
+      ))}
     </section>
   );
 };
@@ -191,11 +190,18 @@ export default App;
 ```vue
 <template>
   <div>
+    <img v-if="heroBanner" :src="heroBanner" alt="Hero" />
     <h1>{{ title }}</h1>
     <p>{{ subtitle }}</p>
-    <img v-if="heroImage" :src="heroImage" alt="Hero" />
+    <button :style="{ backgroundColor: accentColor }">{{ ctaLabel }}</button>
 
-    <select v-model="language" @change="setLanguage(language)">
+    <div v-for="(product, i) in products" :key="i">
+      <img v-if="product.image_url" :src="product.image_url" :alt="product.title" width="56" />
+      <h3>{{ product.title }}</h3>
+      <span>${{ product.price?.toFixed(2) }}</span>
+    </div>
+
+    <select v-model="language" @change="changeLanguage">
       <option v-for="lang in languages" :key="lang" :value="lang">
         {{ lang.toUpperCase() }}
       </option>
@@ -212,12 +218,15 @@ export default {
   name: 'App',
   data() {
     return {
-      title: '[common:brand_name]',
-      subtitle: '[homepage:hero_subtitle]',
-      heroImage: null,
+      title: 'Welcome',
+      subtitle: '',
+      ctaLabel: 'Get Started',
+      heroBanner: null,
+      accentColor: '#F97316',
+      products: [],
       languages: ['en'],
       language: 'en',
-      unsubscribers: []
+      unsubs: []
     };
   },
   async mounted() {
@@ -227,30 +236,22 @@ export default {
       projectSecret: import.meta.env.VITE_CMSCURE_SECRET
     });
 
-    this.unsubscribers = [
-      cure.observe('common:brand_name', value => {
-        this.title = typeof value === 'string' && value ? value : '[common:brand_name]';
-      }, { defaultValue: '[common:brand_name]' }),
-      cure.observe('homepage:hero_subtitle', value => {
-        this.subtitle = typeof value === 'string' && value ? value : '[homepage:hero_subtitle]';
-      }, { defaultValue: '[homepage:hero_subtitle]' }),
-      cure.observe('image:deals_banner', value => {
-        this.heroImage = typeof value === 'string' && value ? value : null;
-      }, { defaultValue: null }),
-      cure.observe('meta:languages', value => {
-        this.languages = Array.isArray(value) && value.length ? value : ['en'];
-      }, { defaultValue: ['en'] }),
-      cure.observe('meta:language', value => {
-        this.language = typeof value === 'string' && value ? value : 'en';
-      }, { defaultValue: 'en' })
+    this.unsubs = [
+      cure.observe('home_screen:welcome_title', v => { this.title = v || 'Welcome'; }, { defaultValue: 'Welcome' }),
+      cure.observe('home_screen:welcome_subtitle', v => { this.subtitle = v || ''; }),
+      cure.observe('home_screen:cta_button', v => { this.ctaLabel = v || 'Get Started'; }),
+      cure.observe('image:hero_banner', v => { this.heroBanner = typeof v === 'string' ? v : null; }),
+      cure.observe('color:accent_color', v => { this.accentColor = typeof v === 'string' ? v : '#F97316'; }),
+      cure.observe('store:feature_products', v => { this.products = Array.isArray(v) ? v : []; }),
+      cure.observe('meta:languages', v => { this.languages = Array.isArray(v) ? v : ['en']; })
     ];
   },
   beforeUnmount() {
-    this.unsubscribers.forEach(unsubscribe => unsubscribe());
+    this.unsubs.forEach(fn => fn());
   },
   methods: {
-    setLanguage(lang) {
-      void cure.setLanguage(lang);
+    changeLanguage() {
+      cure.setLanguage(this.language);
     }
   }
 };
@@ -280,36 +281,36 @@ await cure.configure({
 Get a translation for a specific key and tab. Automatically caches and subscribes to realtime updates for that tab.
 
 ```javascript
-const title = cure.translation('hero_title', 'homepage', '[homepage:hero_title]');
+const title = cure.translation('welcome_title', 'home_screen', 'Welcome');
 ```
 
 #### `image(key: string, defaultValue?: string | null): string | null`
 Get a global image URL by key. Image URLs are cached and prefetched for smooth rendering.
 
 ```javascript
-const heroBanner = cure.image('deals_banner');
+const heroBanner = cure.image('hero_banner');
 ```
 
 #### `color(key: string, defaultValue?: string | null): string | null`
 Get a color value by key. Colors stay cached and refresh silently when changed.
 
 ```javascript
-const primary = cure.color('primary_color', '#663BEB');
+const primary = cure.color('primary_color', '#3B82F6');
 ```
 
 #### `dataStore(apiIdentifier: string, defaultValue?: any[]): any[]`
 Get data store items by API identifier. Stores are cached and resynced when updates arrive.
 
 ```javascript
-const products = cure.dataStore('products', []);
+const products = cure.dataStore('feature_products', []);
 ```
 
 #### `resolve(reference: string, defaultValue?: any): any`
-Resolve a CMSCure reference string. Supports translations (`homepage:hero_title`), colors (`color:primary_color`), images (`image:logo`), data stores (`store:products`), and metadata (`meta:language`).
+Resolve a CMSCure reference string. Supports translations (`home_screen:welcome_title`), colors (`color:primary_color`), images (`image:hero_banner`), data stores (`store:feature_products`), and metadata (`meta:language`).
 
 ```javascript
-const heroTitle = cure.resolve('homepage:hero_title');
-const accentColor = cure.resolve('color:primary_accent', '#3B82F6');
+const title = cure.resolve('home_screen:welcome_title');
+const accentColor = cure.resolve('color:accent_color', '#F97316');
 const languages = cure.resolve('meta:languages', ['en']);
 ```
 
@@ -317,8 +318,8 @@ const languages = cure.resolve('meta:languages', ['en']);
 Observe a CMSCure reference and receive callbacks whenever the underlying value changes. Returns an unsubscribe function.
 
 ```javascript
-const unsubscribe = cure.observe('homepage:hero_title', (value, detail) => {
-  document.querySelector('#hero-title').textContent = value;
+const unsubscribe = cure.observe('home_screen:welcome_title', (value, detail) => {
+  document.querySelector('#title').textContent = value;
   console.log('Updated because:', detail?.reason);
 });
 ```
@@ -390,9 +391,9 @@ await cure.configure({
   projectSecret: 'your-project-secret' // Enables sockets
 });
 
-const unsubscribe = cure.observe('homepage:hero_title', (value, detail) => {
+const unsubscribe = cure.observe('home_screen:welcome_title', (value, detail) => {
   console.log('Content refreshed because:', detail?.reason);
-  document.querySelector('#hero-title').textContent = value;
+  document.querySelector('#title').textContent = value;
 });
 ```
 
@@ -467,12 +468,12 @@ export const useCMS = () => useContext(CMSContext);
 
 export function HeroSection() {
   const cure = useCMS();
-  const [title, setTitle] = useState('[homepage:hero_title]');
+  const [title, setTitle] = useState('Welcome');
 
   useEffect(() => {
-    const unsubscribe = cure.observe('homepage:hero_title', value => {
-      setTitle(typeof value === 'string' && value ? value : '[homepage:hero_title]');
-    }, { defaultValue: '[homepage:hero_title]' });
+    const unsubscribe = cure.observe('home_screen:welcome_title', value => {
+      setTitle(typeof value === 'string' && value ? value : 'Welcome');
+    }, { defaultValue: 'Welcome' });
 
     return () => unsubscribe();
   }, [cure]);
