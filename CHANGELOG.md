@@ -1,3 +1,7 @@
+## [1.4.8](https://github.com/cmscure/javascript-sdk/compare/v1.4.7...v1.4.8) (unreleased)
+
+* **feat:** App key mode. With a per project app key (`cmsc_ck_...`) as `apiKey`, `projectSecret` is optional: real time updates sign in with the app key (`sdk:authenticate`), so revoking the key also stops live updates. Account API keys still need `projectSecret` and keep the encrypted handshake.
+
 ## [1.4.7](https://github.com/cmscure/javascript-sdk/compare/v1.4.6...v1.4.7) (2026-04-11)
 
 * **fix:** Data store items now correctly read fields from `item.data` instead of top-level properties

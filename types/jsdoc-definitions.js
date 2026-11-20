@@ -3,7 +3,7 @@
  * Enhanced IntelliSense support for JavaScript projects
  * 
  * @fileoverview CMSCure SDK provides content management capabilities for web applications
- * @version 1.4.7
+ * @version 1.4.8
  * @author CMSCure Team
  * @license MIT
  */

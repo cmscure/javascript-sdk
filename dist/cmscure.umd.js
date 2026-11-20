@@ -1,5 +1,5 @@
 /**
- * CMSCure JavaScript SDK v1.4.7
+ * CMSCure JavaScript SDK v1.4.8
  * Official SDK for CMSCure content management
  * 
  * Copyright (c) 2026 CMSCure
@@ -4408,7 +4408,7 @@
           return;
         }
 
-        if (!this.#projectSecret) {
+        if (!this.#projectSecret && !this.#usesAppKey()) {
           console.warn('[CMSCureSDK] Project secret not provided. Real-time updates are disabled.');
           return;
         }
@@ -4485,8 +4485,19 @@
         });
       }
 
+      // Per project app keys (cmsc_ck_) can run without a projectSecret; the
+      // socket then signs in with the key itself over TLS.
+      #usesAppKey() {
+        return !this.#projectSecret && typeof this.#config?.apiKey === 'string' && this.#config.apiKey.startsWith('cmsc_ck_');
+      }
+
       async #performHandshake() {
         if (!this.#config || !this.#socket) {
+          return;
+        }
+
+        if (this.#usesAppKey()) {
+          this.#socket.emit('sdk:authenticate', { projectId: this.#config.projectId, clientKey: this.#config.apiKey });
           return;
         }
 
